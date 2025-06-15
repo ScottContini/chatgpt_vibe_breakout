@@ -1,0 +1,12 @@
+# Ignore temporary files
+*.tmp
+*.log
+
+# Ignore editor specific files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Ignore node_modules
+node_modules/
