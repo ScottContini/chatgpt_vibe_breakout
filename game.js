@@ -1,27 +1,49 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
+// Sounds
 const paddleSound = document.getElementById("paddleSound");
 const brickSound = document.getElementById("brickSound");
 const loseSound = document.getElementById("loseSound");
 const winSound = document.getElementById("winSound");
 
 
-// Brick settings
+// Game settings
+let level = 1;
 const brickRowCount = 5;
 const brickColumnCount = 7;
+let bricksRemaining = brickRowCount*brickColumnCount;
 const brickWidth = 55;
 const brickHeight = 20;
 const brickPadding = 10;
 const brickOffsetTop = 30;
 const brickOffsetLeft = 35;
-
-let score = 0;
-
+const paddleHeight = 10;
+const paddleWidth = 75;
+const paddleMarginBottom = paddleHeight * 2;
+const paddleY = canvas.height - paddleHeight - paddleMarginBottom;
+const paddleCollisionY = canvas.height - paddleMarginBottom - paddleHeight;
+const ballRadius = 10;
 const startDelay = 2000; // 2000 ms = 2 seconds pause
+
+// Game state
+let score = 0;
+let highScore = localStorage.getItem("breakoutHighScore") || 0;
 let startTime = Date.now();
 let ballMoving = false;
+let soundEnabled = false;
 
+// Ball variables
+let x = canvas.width / 2;
+let y = canvas.height - 100;
+let dx = 2;
+let dy = -2;
+
+let paddleX = (canvas.width - paddleWidth) / 2;
+
+// Input tracking
+let rightPressed = false;
+let leftPressed = false;
 
 // Brick data structure (2D array)
 const bricks = [];
@@ -30,6 +52,11 @@ for (let c = 0; c < brickColumnCount; c++) {
   for (let r = 0; r < brickRowCount; r++) {
     bricks[c][r] = { x: 0, y: 0, status: 1 }; // status: 1 = visible, 0 = broken
   }
+}
+
+function getBrickColor(level) {
+  const hue = (level * 40) % 360; // Rotate hue each level
+  return `hsl(${hue}, 80%, 60%)`;
 }
 
 
@@ -44,7 +71,7 @@ function drawBricks() {
 
         ctx.beginPath();
         ctx.rect(brickX, brickY, brickWidth, brickHeight);
-        ctx.fillStyle = "#ff6347"; // tomato red
+        ctx.fillStyle = getBrickColor(level);
         ctx.fill();
         ctx.closePath();
       }
@@ -70,11 +97,16 @@ function collisionDetection() {
           }
           dy = -dy;
           b.status = 0;
+          bricksRemaining--;
           score++;
-          if (score === brickRowCount * brickColumnCount) {
-            winSound.play();
-            alert("YOU WIN!");
-            resetGame();
+          if (score > highScore) {
+            highScore = score;
+            localStorage.setItem("breakoutHighScore", highScore);
+          }
+          if (bricksRemaining === 0) {
+            if (soundEnabled)
+                winSound.play();
+            startNextLevel();
           }
         }
       }
@@ -84,27 +116,12 @@ function collisionDetection() {
 
 
 
-// Paddle variables
-const paddleHeight = 10;
-const paddleWidth = 75;
-let paddleX = (canvas.width - paddleWidth) / 2;
 
-// Ball variables
-let ballRadius = 10;
-let x = canvas.width / 2;
-let y = canvas.height - 100;
-let dx = 2;
-let dy = -2;
-
-// Input tracking
-let rightPressed = false;
-let leftPressed = false;
 
 // Event listeners
 document.addEventListener("keydown", keyDownHandler, false);
 document.addEventListener("keyup", keyUpHandler, false);
-canvas.addEventListener("mousemove", mouseMoveHandler, false);
-let soundEnabled = false;
+document.addEventListener("mousemove", mouseMoveHandler);
 document.addEventListener("keydown", () => {
   soundEnabled = true;
 });
@@ -156,10 +173,26 @@ function drawBall() {
 
 function drawPaddle() {
   ctx.fillStyle = "#0095DD";
-  ctx.fillRect(paddleX, canvas.height - paddleHeight, paddleWidth, paddleHeight);
+  ctx.fillRect(paddleX, paddleY, paddleWidth, paddleHeight);
 }
 
-function draw() {
+
+// this is to fix a glitch of the ball getting stuck side walls
+// code from ChatGPT and honestly I don't trust this, but it does
+// make the problem happen a lot less often
+function ensureMinimumVelocity() {
+  const minSpeed = 1.0;
+
+  if (Math.abs(dx) < minSpeed) {
+    dx = dx < 0 ? -minSpeed : minSpeed;
+  }
+  if (Math.abs(dy) < minSpeed) {
+    dy = dy < 0 ? -minSpeed : minSpeed;
+  }
+}
+
+
+function draw(delta) {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   drawBall();
@@ -179,24 +212,35 @@ function draw() {
   // Wall collisions
   if (x + dx > canvas.width - ballRadius || x + dx < ballRadius) {
     dx = -dx;
+    ensureMinimumVelocity();
   }
+
+  const ballWithinPaddleZone = y + dy > paddleCollisionY && y + dy < paddleCollisionY + paddleHeight;
 
   if (y + dy < ballRadius) {
     dy = -dy;
-  } else if (y + dy > canvas.height - paddleHeight) {
+    ensureMinimumVelocity();
+  } else if (ballWithinPaddleZone) {
     // Paddle collision
     if (x > paddleX && x < paddleX + paddleWidth) {
       dy = -dy;
+      ensureMinimumVelocity();
       if (soundEnabled) {
         paddleSound.currentTime = 0;
         paddleSound.play();
       }
-    } else {
+    }
+  } else if (y + dy > canvas.height) {
       // Game over (reset)
       loseSound.play();
-      alert("Game Over");
+      if (score > highScore) {
+        highScore = score;
+        localStorage.setItem("breakoutHighScore", highScore);
+      }
+      setTimeout(() => {
+        alert("Game Over");
+      }, 100);
       resetGame();
-    }
   }
 
   if (!ballMoving) {
@@ -206,18 +250,57 @@ function draw() {
   }
 
   if (ballMoving) {
-    x += dx;
-    y += dy;
+    x += dx * (delta / 10.0);
+    y += dy * (delta / 10.0);
   }
 
 }
 
 
+
 function drawScore() {
   ctx.font = "16px Arial";
   ctx.fillStyle = "#ffffff";
+
+  ctx.textAlign = "left";
   ctx.fillText("Score: " + score, 8, 20);
+
+  ctx.textAlign = "right";
+  ctx.fillText("High Score: " + highScore, canvas.width - 8, 20);
+
+  ctx.textAlign = "center";
+  ctx.fillText("Level: " + level, canvas.width / 2, 20);
 }
+
+
+
+function startNextLevel() {
+  // Increase ball speed slightly
+  dx *= 1.1;
+  dy *= 1.1;
+  // always make the ball go upward at the start so player has a chance
+  if (dy > 0)
+    dy = -dy
+
+  // Reset ball and paddle
+  x = canvas.width / 2;
+  y = canvas.height - 120;
+  paddleX = (canvas.width - paddleWidth) / 2;
+
+  // Reset brick statuses
+  for (let c = 0; c < brickColumnCount; c++) {
+    for (let r = 0; r < brickRowCount; r++) {
+      bricks[c][r].status = 1;
+    }
+  }
+
+  level++;
+  bricksRemaining = brickRowCount*brickColumnCount;
+  startTime = Date.now();
+  ballMoving = false;
+
+}
+
 
 function resetGame() {
   x = canvas.width / 2;
@@ -228,6 +311,7 @@ function resetGame() {
   startTime = Date.now();
   ballMoving = false;
   score = 0;
+  level = 1;
 
   // Reset bricks
   for (let c = 0; c < brickColumnCount; c++) {
@@ -235,8 +319,32 @@ function resetGame() {
       bricks[c][r].status = 1;
     }
   }
+  bricksRemaining = brickRowCount*brickColumnCount;
+}
+
+function playSound(sound) {
+  sound.pause();
+  sound.currentTime = 0;
+  sound.play().catch((e) => {
+    // Safari might reject play if user hasn't interacted
+    console.warn("Audio play blocked:", e.message);
+  });
 }
 
 
-setInterval(draw, 10);
+let lastTime = 0;
+
+function gameLoop(timeStamp) {
+  const delta = Math.min(timeStamp - lastTime, 30);
+  lastTime = timeStamp;
+  draw(delta);
+  requestAnimationFrame(gameLoop);
+}
+
+// Start the loop this way:
+requestAnimationFrame((timeStamp) => {
+  lastTime = timeStamp;
+  gameLoop(timeStamp);
+});
+
 
