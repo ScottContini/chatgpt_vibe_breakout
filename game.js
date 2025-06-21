@@ -1,12 +1,24 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
+
+let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+let brickBuffer = null;
+
+
 // Sounds
 const paddleSound = document.getElementById("paddleSound");
-const brickSound = document.getElementById("brickSound");
 const loseSound = document.getElementById("loseSound");
 const winSound = document.getElementById("winSound");
 
+fetch("sounds/brick.wav")
+  .then(response => response.arrayBuffer())
+  .then(data => audioCtx.decodeAudioData(data))
+  .then(buffer => {
+    brickBuffer = buffer;
+    console.log("Brick sound loaded");
+  })
+  .catch(err => console.error("Failed to load brick sound:", err));
 
 // Game settings
 let level = 1;
@@ -80,6 +92,26 @@ function drawBricks() {
 }
 
 
+function playBrickSoundWithPitch(row) {
+  if (!brickBuffer || !soundEnabled) return;
+
+  const source = audioCtx.createBufferSource();
+  source.buffer = brickBuffer;
+
+  const maxPitch = 1.6;
+  const pitch = maxPitch - row * 0.15;
+  source.playbackRate.value = Math.max(0.7, pitch);  // Clamp to avoid extremes
+
+  source.connect(audioCtx.destination);
+
+  if (audioCtx.state === "suspended") {
+    audioCtx.resume().then(() => source.start());
+  } else {
+    source.start();
+  }
+}
+
+
 function collisionDetection() {
   for (let c = 0; c < brickColumnCount; c++) {
     for (let r = 0; r < brickRowCount; r++) {
@@ -92,8 +124,7 @@ function collisionDetection() {
           y < b.y + brickHeight
         ) {
           if (soundEnabled) {
-            brickSound.currentTime = 0;
-            brickSound.play();
+            playBrickSoundWithPitch(r);
           }
           dy = -dy;
           b.status = 0;
@@ -213,6 +244,7 @@ function draw(delta) {
       if (soundEnabled) {
         paddleSound.currentTime = 0;
         paddleSound.play();
+        //playPaddleSound();
       }
     }
   } else if (y + dy > canvas.height) {
