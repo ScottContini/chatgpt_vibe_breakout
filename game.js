@@ -57,7 +57,7 @@ for (let c = 0; c < brickColumnCount; c++) {
 
 
 function drawBricks() {
-  const hue = (level * 20) % 360;
+  const hue = (level * 34) % 360;
 
   for (let c = 0; c < brickColumnCount; c++) {
     for (let r = 0; r < brickRowCount; r++) {
@@ -67,7 +67,7 @@ function drawBricks() {
         bricks[c][r].x = brickX;
         bricks[c][r].y = brickY;
 
-        const lightness = 65 - r * 10;
+        const lightness = 65 - r * 7;
 
         ctx.beginPath();
         ctx.rect(brickX, brickY, brickWidth, brickHeight);
@@ -98,7 +98,7 @@ function collisionDetection() {
           dy = -dy;
           b.status = 0;
           bricksRemaining--;
-          score++;
+          score = score + 5 - r;
           if (score > highScore) {
             highScore = score;
             localStorage.setItem("breakoutHighScore", highScore);
@@ -177,21 +177,6 @@ function drawPaddle() {
 }
 
 
-// this is to fix a glitch of the ball getting stuck side walls
-// code from ChatGPT and honestly I don't trust this, but it does
-// make the problem happen a lot less often
-function ensureMinimumVelocity() {
-  const minSpeed = 1.0;
-
-  if (Math.abs(dx) < minSpeed) {
-    dx = dx < 0 ? -minSpeed : minSpeed;
-  }
-  if (Math.abs(dy) < minSpeed) {
-    dy = dy < 0 ? -minSpeed : minSpeed;
-  }
-}
-
-
 function draw(delta) {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -210,21 +195,21 @@ function draw(delta) {
   collisionDetection();
 
   // Wall collisions
-  if (x + dx > canvas.width - ballRadius || x + dx < ballRadius) {
-    dx = -dx;
-    ensureMinimumVelocity();
-  }
+  if (x + dx > canvas.width - ballRadius) 
+    // too far to the right
+    dx = - Math.abs(dx);
+  else if (x + dx < ballRadius)
+    // too far to the left
+    dx = Math.abs(dx);
 
   const ballWithinPaddleZone = y + dy > paddleCollisionY && y + dy < paddleCollisionY + paddleHeight;
 
   if (y + dy < ballRadius) {
-    dy = -dy;
-    ensureMinimumVelocity();
+    dy = Math.abs(dy);
   } else if (ballWithinPaddleZone) {
     // Paddle collision
     if (x > paddleX && x < paddleX + paddleWidth) {
-      dy = -dy;
-      ensureMinimumVelocity();
+      dy = -Math.abs(dy);
       if (soundEnabled) {
         paddleSound.currentTime = 0;
         paddleSound.play();
