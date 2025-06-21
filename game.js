@@ -54,13 +54,11 @@ for (let c = 0; c < brickColumnCount; c++) {
   }
 }
 
-function getBrickColor(level) {
-  const hue = (level * 40) % 360; // Rotate hue each level
-  return `hsl(${hue}, 80%, 60%)`;
-}
 
 
 function drawBricks() {
+  const hue = (level * 20) % 360;
+
   for (let c = 0; c < brickColumnCount; c++) {
     for (let r = 0; r < brickRowCount; r++) {
       if (bricks[c][r].status === 1) {
@@ -69,9 +67,11 @@ function drawBricks() {
         bricks[c][r].x = brickX;
         bricks[c][r].y = brickY;
 
+        const lightness = 65 - r * 10;
+
         ctx.beginPath();
         ctx.rect(brickX, brickY, brickWidth, brickHeight);
-        ctx.fillStyle = getBrickColor(level);
+        ctx.fillStyle = `hsl(${hue}, 80%, ${lightness}%)`;
         ctx.fill();
         ctx.closePath();
       }
