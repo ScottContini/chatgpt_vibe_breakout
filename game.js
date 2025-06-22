@@ -37,13 +37,19 @@ const paddleY = canvas.height - paddleHeight - paddleMarginBottom;
 const paddleCollisionY = canvas.height - paddleMarginBottom - paddleHeight;
 const ballRadius = 10;
 const startDelay = 2000; // 2000 ms = 2 seconds pause
+let messageText = "";
+let messageTimer = 0;
+const messageFadeDuration = 120; // in frames (2 seconds)
+const messageFadeDelay = 60; // show fully opaque for first messageFadeDelay frames
+
 
 // Game state
 let score = 0;
 let highScore = localStorage.getItem("breakoutHighScore") || 0;
 let startTime = Date.now();
-let ballMoving = false;
 let soundEnabled = false;
+let gameState = 'playing'; // 'playing', 'waiting', 'paused'
+
 
 // Ball variables
 let x = canvas.width / 2;
@@ -137,7 +143,12 @@ function collisionDetection() {
           if (bricksRemaining === 0) {
             if (soundEnabled)
                 winSound.play();
-            startNextLevel();
+            messageText = `Level ${level} Complete!`;
+            messageTimer = messageFadeDuration;
+            gameState = 'paused';
+            setTimeout(() => {
+              startNextLevel();
+            }, 2000);
           }
         }
       }
@@ -208,13 +219,35 @@ function drawPaddle() {
 }
 
 
+// This will output any messaging that appears on the screen during the game
+function gameMessaging() {
+  if (messageTimer > 0) {
+    let alpha = 1;
+
+    if (messageTimer < (messageFadeDuration - messageFadeDelay)) {
+      const fadeRatio = messageTimer / (messageFadeDuration - messageFadeDelay);
+      alpha = Math.max(0, fadeRatio);
+    }
+
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "32px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText(messageText, canvas.width / 2, canvas.height / 2);
+    ctx.globalAlpha = 1.0;
+
+    messageTimer--;
+  }
+}
+
 function draw(delta) {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  drawBall();
   drawPaddle();
   drawBricks();
   drawScore();
+  if (gameState === 'playing' || gameState === 'waiting')
+    drawBall();
 
   // Paddle movement
   if (rightPressed && paddleX < canvas.width - paddleWidth) {
@@ -260,17 +293,18 @@ function draw(delta) {
       resetGame();
   }
 
-  if (!ballMoving) {
+  if (gameState === 'waiting') {
     if (Date.now() - startTime >= startDelay) {
-      ballMoving = true;
+      gameState = 'playing';
     }
   }
 
-  if (ballMoving) {
+  if (gameState === 'playing') {
     x += dx * (delta / 10.0);
     y += dy * (delta / 10.0);
   }
 
+  gameMessaging();
 }
 
 
@@ -314,7 +348,10 @@ function startNextLevel() {
   level++;
   bricksRemaining = brickRowCount*brickColumnCount;
   startTime = Date.now();
-  ballMoving = false;
+  gameState = 'waiting';
+
+  messageText = `Level ${level}`;
+  messageTimer = 120;
 
 }
 
@@ -325,8 +362,8 @@ function resetGame() {
   dx = 2;
   dy = -2;
   paddleX = (canvas.width - paddleWidth) / 2;
-  startTime = Date.now();
-  ballMoving = false;
+  gameState = 'waiting';
+  startTime = Date.now(); // start the countdown again
   score = 0;
   level = 1;
 
