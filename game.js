@@ -170,6 +170,24 @@ document.addEventListener("keydown", () => {
 document.addEventListener("click", () => {
   soundEnabled = true;
 });
+canvas.addEventListener("touchstart", handleTouchMove, { passive: true });
+canvas.addEventListener("touchmove", handleTouchMove, { passive: true });
+
+// Support for mobile devices
+function handleTouchMove(e) {
+  if (e.touches.length > 0) {
+    const touchX = e.touches[0].clientX - canvas.getBoundingClientRect().left;
+
+    if (touchX > 0 && touchX < canvas.width) {
+      paddleX = touchX - paddleWidth / 2;
+
+      // Keep paddle inside bounds
+      paddleX = Math.max(0, Math.min(canvas.width - paddleWidth, paddleX));
+    }
+  }
+  soundEnabled = true;
+}
+
 
 
 function mouseMoveHandler(e) {
@@ -277,7 +295,6 @@ function draw(delta) {
       if (soundEnabled) {
         paddleSound.currentTime = 0;
         paddleSound.play();
-        //playPaddleSound();
       }
     }
   } else if (y + dy > canvas.height) {
