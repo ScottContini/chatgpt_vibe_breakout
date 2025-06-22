@@ -41,6 +41,8 @@ let messageText = "";
 let messageTimer = 0;
 const messageFadeDuration = 120; // in frames (2 seconds)
 const messageFadeDelay = 60; // show fully opaque for first messageFadeDelay frames
+const baseWidth = 480;
+const baseHeight = 320;
 
 
 // Game state
@@ -70,6 +72,25 @@ for (let c = 0; c < brickColumnCount; c++) {
   for (let r = 0; r < brickRowCount; r++) {
     bricks[c][r] = { x: 0, y: 0, status: 1 }; // status: 1 = visible, 0 = broken
   }
+}
+
+
+function resizeCanvas() {
+  const canvas = document.getElementById('gameCanvas');
+  const parentWidth = window.innerWidth;
+  const parentHeight = window.innerHeight;
+  const aspectRatio = canvas.width / canvas.height;
+
+  let newWidth = parentWidth;
+  let newHeight = parentWidth / aspectRatio;
+
+  if (newHeight > parentHeight) {
+    newHeight = parentHeight;
+    newWidth = parentHeight * aspectRatio;
+  }
+
+  canvas.style.width = `${newWidth}px`;
+  canvas.style.height = `${newHeight}px`;
 }
 
 
@@ -172,6 +193,8 @@ document.addEventListener("click", () => {
 });
 canvas.addEventListener("touchstart", handleTouchMove, { passive: true });
 canvas.addEventListener("touchmove", handleTouchMove, { passive: true });
+resizeCanvas();
+window.addEventListener("resize", resizeCanvas);
 
 // Support for mobile devices
 function handleTouchMove(e) {
