@@ -2,19 +2,29 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Breakout Game</title>
   <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden; /* Prevent scrolling */
+      height: 100%;
+      background: black;
+    }
+
     canvas {
-      background: #000;
       display: block;
       margin: 0 auto;
       border: 2px solid #fff;
+      touch-action: none; /* Prevent touch gestures from scrolling the page */
     }
   </style>
 </head>
 <body>
   <canvas id="gameCanvas" width="480" height="360"></canvas>
+
+  <!-- Audio elements -->
   <audio id="paddleSound" src="sounds/paddle.wav"></audio>
   <audio id="brickSound" src="sounds/brick.wav"></audio>
   <audio id="loseSound" src="sounds/lose.mp3"></audio>
