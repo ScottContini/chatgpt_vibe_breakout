@@ -191,8 +191,8 @@ document.addEventListener("keydown", () => {
 document.addEventListener("click", () => {
   soundEnabled = true;
 });
-canvas.addEventListener("touchstart", handleTouchMove, { passive: false });
-canvas.addEventListener("touchmove", handleTouchMove, { passive: false });
+canvas.addEventListener("touchstart", handleTouch, { passive: false });
+canvas.addEventListener("touchmove", handleTouch, { passive: false });
 resizeCanvas();
 window.addEventListener("resize", resizeCanvas);
 
