@@ -41,8 +41,6 @@ let messageText = "";
 let messageTimer = 0;
 const messageFadeDuration = 120; // in frames (2 seconds)
 const messageFadeDelay = 60; // show fully opaque for first messageFadeDelay frames
-const baseWidth = 480;
-const baseHeight = 320;
 
 
 // Game state
@@ -72,25 +70,6 @@ for (let c = 0; c < brickColumnCount; c++) {
   for (let r = 0; r < brickRowCount; r++) {
     bricks[c][r] = { x: 0, y: 0, status: 1 }; // status: 1 = visible, 0 = broken
   }
-}
-
-
-function resizeCanvas() {
-  const canvas = document.getElementById('gameCanvas');
-  const parentWidth = window.innerWidth;
-  const parentHeight = window.innerHeight;
-  const aspectRatio = canvas.width / canvas.height;
-
-  let newWidth = parentWidth;
-  let newHeight = parentWidth / aspectRatio;
-
-  if (newHeight > parentHeight) {
-    newHeight = parentHeight;
-    newWidth = parentHeight * aspectRatio;
-  }
-
-  canvas.style.width = `${newWidth}px`;
-  canvas.style.height = `${newHeight}px`;
 }
 
 
@@ -191,28 +170,22 @@ document.addEventListener("keydown", () => {
 document.addEventListener("click", () => {
   soundEnabled = true;
 });
-canvas.addEventListener("touchstart", handleTouch, { passive: false });
-canvas.addEventListener("touchmove", handleTouch, { passive: false });
-resizeCanvas();
-window.addEventListener("resize", resizeCanvas);
+canvas.addEventListener("touchstart", handleTouchMove, { passive: true });
+canvas.addEventListener("touchmove", handleTouchMove, { passive: true });
 
-function handleTouch(event) {
-  event.preventDefault(); // This prevents scrolling and allows smooth dragging
-  soundEnabled = true;
+// Support for mobile devices
+function handleTouchMove(e) {
+  if (e.touches.length > 0) {
+    const touchX = e.touches[0].clientX - canvas.getBoundingClientRect().left;
 
-  const touch = event.touches[0];
-  const rect = canvas.getBoundingClientRect();
-  const relativeX = touch.clientX - rect.left;
+    if (touchX > 0 && touchX < canvas.width) {
+      paddleX = touchX - paddleWidth / 2;
 
-  if (relativeX > 0 && relativeX < canvas.width) {
-    paddleX = relativeX - paddleWidth / 2;
-
-    if (paddleX < 0) {
-      paddleX = 0;
-    } else if (paddleX > canvas.width - paddleWidth) {
-      paddleX = canvas.width - paddleWidth;
+      // Keep paddle inside bounds
+      paddleX = Math.max(0, Math.min(canvas.width - paddleWidth, paddleX));
     }
   }
+  soundEnabled = true;
 }
 
 
@@ -444,5 +417,6 @@ requestAnimationFrame((timeStamp) => {
   lastTime = timeStamp;
   gameLoop(timeStamp);
 });
+
 
 
