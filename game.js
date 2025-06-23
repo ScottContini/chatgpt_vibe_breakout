@@ -352,6 +352,10 @@ function drawScore() {
 
 
 function startNextLevel() {
+  if (soundEnabled) {
+    winSound.currentTime = 0;
+    winSound.play();
+  }
   // Increase ball speed slightly
   dx *= 1.1;
   dy *= 1.1;
