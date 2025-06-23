@@ -170,11 +170,14 @@ document.addEventListener("keydown", () => {
 document.addEventListener("click", () => {
   soundEnabled = true;
 });
-canvas.addEventListener("touchstart", handleTouchMove, { passive: true });
-canvas.addEventListener("touchmove", handleTouchMove, { passive: true });
+canvas.addEventListener("touchstart", handleTouchMove, { passive: false });
+canvas.addEventListener("touchmove", handleTouchMove, { passive: false });
+
 
 // Support for mobile devices
 function handleTouchMove(e) {
+  e.preventDefault();
+
   if (e.touches.length > 0) {
     const touchX = e.touches[0].clientX - canvas.getBoundingClientRect().left;
 
