@@ -52,7 +52,7 @@ let gameState = 'playing'; // 'playing', 'waiting', 'paused'
 
 
 // Ball variables
-let x = canvas.width / 2;
+let x = canvas.width * (0.4 + Math.random() * 0.2);
 let y = canvas.height - 100;
 let dx = 2;
 let dy = -2;
@@ -141,8 +141,10 @@ function collisionDetection() {
             localStorage.setItem("breakoutHighScore", highScore);
           }
           if (bricksRemaining === 0) {
-            if (soundEnabled)
+            if (soundEnabled) {
+                winSound.currentTime = 0;
                 winSound.play();
+            }
             messageText = `Level ${level} Complete!`;
             messageTimer = messageFadeDuration;
             gameState = 'paused';
@@ -352,10 +354,6 @@ function drawScore() {
 
 
 function startNextLevel() {
-  if (soundEnabled) {
-    winSound.currentTime = 0;
-    winSound.play();
-  }
   // Increase ball speed slightly
   dx *= 1.1;
   dy *= 1.1;
@@ -364,7 +362,7 @@ function startNextLevel() {
     dy = -dy
 
   // Reset ball and paddle
-  x = canvas.width / 2;
+  x = canvas.width * (0.4 + Math.random() * 0.2);
   y = canvas.height - 120;
   paddleX = (canvas.width - paddleWidth) / 2;
 
