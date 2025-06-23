@@ -255,11 +255,20 @@ function gameMessaging() {
     ctx.font = "32px Arial";
     ctx.textAlign = "center";
     ctx.fillText(messageText, canvas.width / 2, canvas.height / 2);
-    ctx.globalAlpha = 1.0;
 
-    messageTimer--;
+    if (gameState === 'gameover') {
+      ctx.font = "20px Arial";
+      ctx.fillStyle = "#00ff00";
+      ctx.fillText("Tap or click to play again", canvas.width / 2, canvas.height / 2 + 40);
+    }
+
+    ctx.globalAlpha = 1.0;
+    if (gameState !== 'gameover') {
+      messageTimer--;
+    }
   }
 }
+
 
 function draw(delta) {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -300,17 +309,14 @@ function draw(delta) {
         paddleSound.play();
       }
     }
-  } else if (y + dy > canvas.height) {
-      // Game over (reset)
+  } else if (y + dy > canvas.height && gameState !== 'gameover') {
+    if (soundEnabled) {
+      loseSound.currentTime = 0;
       loseSound.play();
-      if (score > highScore) {
-        highScore = score;
-        localStorage.setItem("breakoutHighScore", highScore);
-      }
-      setTimeout(() => {
-        alert("Game Over");
-      }, 100);
-      resetGame();
+    }
+    messageText = "Game Over";
+    messageTimer = 9999;
+    gameState = 'gameover';
   }
 
   if (gameState === 'waiting') {
@@ -377,6 +383,9 @@ function startNextLevel() {
 
 
 function resetGame() {
+  messageText = "";
+  messageTimer = 0;
+
   x = canvas.width / 2;
   y = canvas.height - 100;
   dx = 2;
@@ -420,6 +429,19 @@ requestAnimationFrame((timeStamp) => {
   lastTime = timeStamp;
   gameLoop(timeStamp);
 });
+
+
+canvas.addEventListener("click", () => {
+  if (gameState === 'gameover') {
+    resetGame();
+  }
+});
+
+canvas.addEventListener("touchstart", () => {
+  if (gameState === 'gameover') {
+    resetGame();
+  }
+}, { passive: true });
 
 
 
