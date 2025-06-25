@@ -322,8 +322,7 @@ function loseLife() {
       messageTimer = 120;
       x = canvas.width * (0.4 + Math.random() * 0.2);
       y = canvas.height - 100;
-      dx = 2;
-      dy = -2;
+      dy = -Math.abs(dy);  // Make it go up upon restart so user has a chance
       paddleX = (canvas.width - paddleWidth) / 2;
       gameState = 'waiting';
       startTime = Date.now();
