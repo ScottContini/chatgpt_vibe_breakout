@@ -10,6 +10,7 @@ let brickBuffer = null;
 const paddleSound = document.getElementById("paddleSound");
 const loseSound = document.getElementById("loseSound");
 const winSound = document.getElementById("winSound");
+const failSound = document.getElementById("failSound");
 
 fetch("sounds/brick.wav")
   .then(response => response.arrayBuffer())
@@ -300,7 +301,34 @@ function gameMessaging() {
 }
 
 
-
+function loseLife() {
+    lives--;
+    if (lives <= 0) {
+      // game over
+      if (soundEnabled) {
+        loseSound.currentTime = 0;
+        loseSound.play();
+      }
+      messageText = "Game Over";
+      messageTimer = 9999;
+      gameState = 'gameover';
+    } else {
+      // still have lives left
+      if (soundEnabled) {
+        failSound.currentTime = 0;
+        failSound.play();
+      }
+      messageText = "Life Lost";
+      messageTimer = 60;
+      x = canvas.width * (0.4 + Math.random() * 0.2);
+      y = canvas.height - 100;
+      dx = 2;
+      dy = -2;
+      paddleX = (canvas.width - paddleWidth) / 2;
+      gameState = 'waiting';
+      startTime = Date.now();
+    }
+}
 
 
 
@@ -351,30 +379,7 @@ function draw(delta) {
       }
     }
   } else if (y + dy > canvas.height && gameState !== 'gameover') {
-    lives--;
-    if (lives <= 0) {
-      if (soundEnabled) {
-        loseSound.currentTime = 0;
-        loseSound.play();
-      }
-      messageText = "Game Over";
-      messageTimer = 9999;
-      gameState = 'gameover';
-    } else {
-      if (soundEnabled) {
-        paddleSound.currentTime = 0;
-        paddleSound.play();
-      }
-      messageText = "Life Lost";
-      messageTimer = 60;
-      x = canvas.width * (0.4 + Math.random() * 0.2);
-      y = canvas.height - 100;
-      dx = 2;
-      dy = -2;
-      paddleX = (canvas.width - paddleWidth) / 2;
-      gameState = 'waiting';
-      startTime = Date.now();
-    }
+    loseLife();
   }
 
   if (gameState === 'playing') {
