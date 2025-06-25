@@ -42,6 +42,8 @@ let messageTimer = 0;
 const messageFadeDuration = 120; // in frames (2 seconds)
 const messageFadeDelay = 60; // show fully opaque for first messageFadeDelay frames
 let gameStarted = false;
+let lives = 3;
+
 
 
 
@@ -304,8 +306,15 @@ function draw(delta) {
   drawPaddle();
   drawBricks();
   drawScore();
-  if (gameState === 'playing' || gameState === 'waiting')
+  if (gameState === 'playing')
     drawBall();
+  if (gameState === 'waiting') {
+    if (Date.now() - startTime >= startDelay) {
+      gameState = 'playing';
+    }
+    drawBall();
+}
+
 
   // Paddle movement
   if (rightPressed && paddleX < canvas.width - paddleWidth) {
@@ -338,18 +347,29 @@ function draw(delta) {
       }
     }
   } else if (y + dy > canvas.height && gameState !== 'gameover') {
-    if (soundEnabled) {
-      loseSound.currentTime = 0;
-      loseSound.play();
-    }
-    messageText = "Game Over";
-    messageTimer = 9999;
-    gameState = 'gameover';
-  }
-
-  if (gameState === 'waiting') {
-    if (Date.now() - startTime >= startDelay) {
-      gameState = 'playing';
+    lives--;
+    if (lives <= 0) {
+      if (soundEnabled) {
+        loseSound.currentTime = 0;
+        loseSound.play();
+      }
+      messageText = "Game Over";
+      messageTimer = 9999;
+      gameState = 'gameover';
+    } else {
+      if (soundEnabled) {
+        paddleSound.currentTime = 0;
+        paddleSound.play();
+      }
+      messageText = "Life Lost";
+      messageTimer = 60;
+      x = canvas.width * (0.4 + Math.random() * 0.2);
+      y = canvas.height - 100;
+      dx = 2;
+      dy = -2;
+      paddleX = (canvas.width - paddleWidth) / 2;
+      gameState = 'waiting';
+      startTime = Date.now();
     }
   }
 
@@ -370,11 +390,11 @@ function drawScore() {
   ctx.textAlign = "left";
   ctx.fillText("Score: " + score, 8, 20);
 
-  ctx.textAlign = "right";
-  ctx.fillText("High Score: " + highScore, canvas.width - 8, 20);
-
   ctx.textAlign = "center";
   ctx.fillText("Level: " + level, canvas.width / 2, 20);
+
+  ctx.textAlign = "right";
+  ctx.fillText("Lives: " + lives, canvas.width - 8, 20);
 }
 
 
@@ -420,9 +440,10 @@ function resetGame() {
   dy = -2;
   paddleX = (canvas.width - paddleWidth) / 2;
   gameState = 'waiting';
-  startTime = Date.now(); // start the countdown again
+  startTime = Date.now();
   score = 0;
   level = 1;
+  lives = 3;
 
   // Reset bricks
   for (let c = 0; c < brickColumnCount; c++) {
@@ -430,8 +451,9 @@ function resetGame() {
       bricks[c][r].status = 1;
     }
   }
-  bricksRemaining = brickRowCount*brickColumnCount;
+  bricksRemaining = brickRowCount * brickColumnCount;
 }
+
 
 function playSound(sound) {
   sound.pause();
