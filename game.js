@@ -319,7 +319,7 @@ function loseLife() {
         failSound.play();
       }
       messageText = "Life Lost";
-      messageTimer = 60;
+      messageTimer = 120;
       x = canvas.width * (0.4 + Math.random() * 0.2);
       y = canvas.height - 100;
       dx = 2;
