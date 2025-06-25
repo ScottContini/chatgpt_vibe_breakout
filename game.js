@@ -41,6 +41,9 @@ let messageText = "";
 let messageTimer = 0;
 const messageFadeDuration = 120; // in frames (2 seconds)
 const messageFadeDelay = 60; // show fully opaque for first messageFadeDelay frames
+let gameStarted = false;
+
+
 
 
 // Game state
@@ -172,8 +175,31 @@ document.addEventListener("keydown", () => {
 document.addEventListener("click", () => {
   soundEnabled = true;
 });
+window.addEventListener('load', () => {
+  const intro = document.getElementById("introScreen");
+  intro.style.opacity = '0';
+  setTimeout(() => {
+    intro.style.opacity = '1';
+  }, 50); // slight delay so transition applies
+});
+
 canvas.addEventListener("touchstart", handleTouchMove, { passive: false });
 canvas.addEventListener("touchmove", handleTouchMove, { passive: false });
+
+document.getElementById("startButton").addEventListener("click", () => {
+  const intro = document.getElementById("introScreen");
+  intro.style.opacity = '0';
+
+  setTimeout(() => {
+    intro.style.display = 'none';
+    gameStarted = true;
+    requestAnimationFrame((timeStamp) => {
+      lastTime = timeStamp;
+      gameLoop(timeStamp);
+    });
+  }, 800); // matches transition time
+});
+
 
 
 // Support for mobile devices
@@ -419,12 +445,16 @@ function playSound(sound) {
 
 let lastTime = 0;
 
+
 function gameLoop(timeStamp) {
+  if (!gameStarted) return;
+
   const delta = Math.min(timeStamp - lastTime, 30);
   lastTime = timeStamp;
   draw(delta);
   requestAnimationFrame(gameLoop);
 }
+
 
 // Start the loop this way:
 requestAnimationFrame((timeStamp) => {
