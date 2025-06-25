@@ -300,6 +300,10 @@ function gameMessaging() {
 }
 
 
+
+
+
+
 function draw(delta) {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -387,14 +391,20 @@ function drawScore() {
   ctx.font = "16px Arial";
   ctx.fillStyle = "#ffffff";
 
+  const w = canvas.width;
+
+  // Score (left)
   ctx.textAlign = "left";
   ctx.fillText("Score: " + score, 8, 20);
 
-  ctx.textAlign = "center";
-  ctx.fillText("Level: " + level, canvas.width / 2, 20);
+  // Lives (25%)
+  ctx.fillText("Lives: " + lives, w * 0.25, 20);
 
-  ctx.textAlign = "right";
-  ctx.fillText("Lives: " + lives, canvas.width - 8, 20);
+  // Level (50%)
+  ctx.fillText("Level: " + level, w * 0.5, 20);
+
+  // High Score (75%)
+  ctx.fillText("High Score: " + highScore, w * 0.75, 20);
 }
 
 
