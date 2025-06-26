@@ -116,6 +116,8 @@ function lightenColor(hsl, amount) {
 
 // Particle effect for disintegrating bricks
 const particles = [];
+const trailParticles = [];
+
 
 
 function createParticles(brick, hue) {
@@ -408,7 +410,41 @@ function loseLife() {
     }
 }
 
+function drawParticleTrails() {
 
+  // Emit a trail particle
+  trailParticles.push({
+    x: x,
+    y: y,
+    alpha: 1,
+    size: 3 + Math.random() * 2,
+    dx: (Math.random() - 0.5) * 0.5,
+    dy: (Math.random() - 0.5) * 0.5
+  });
+
+  // Update and draw trail particles
+  for (let i = trailParticles.length - 1; i >= 0; i--) {
+    const p = trailParticles[i];
+    p.x += p.dx;
+    p.y += p.dy;
+    p.alpha -= 0.02;
+    p.size *= 0.96;
+
+    if (p.alpha <= 0 || p.size <= 0.5) {
+      trailParticles.splice(i, 1);
+      continue;
+    }
+
+    ctx.globalAlpha = p.alpha;
+    ctx.fillStyle = "#ffffaa";
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.closePath();
+    ctx.globalAlpha = 1;
+  }
+
+}
 
 function draw(delta) {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -418,6 +454,8 @@ function draw(delta) {
   updateParticles();
   drawParticles();
   drawScore();
+  drawParticleTrails();
+
   if (gameState === 'playing')
     drawBall();
   if (gameState === 'waiting') {
