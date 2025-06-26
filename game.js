@@ -104,6 +104,49 @@ function drawBricks() {
 }
 
 
+// Particle effect for disintegrating bricks
+const particles = [];
+
+function createParticles(brick) {
+  const particleCount = 10;
+  const brickCenterX = brick.x + brickWidth / 2;
+  const brickCenterY = brick.y + brickHeight / 2;
+
+  for (let i = 0; i < particleCount; i++) {
+    particles.push({
+      x: brickCenterX,
+      y: brickCenterY,
+      dx: (Math.random() - 0.5) * 4,
+      dy: (Math.random() - 0.5) * 4,
+      life: 30,
+      color: ctx.fillStyle,
+      size: 2 + Math.random() * 2
+    });
+  }
+}
+
+function updateParticles() {
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.dx;
+    p.y += p.dy;
+    p.life -= 1;
+    if (p.life <= 0) {
+      particles.splice(i, 1);
+    }
+  }
+}
+
+function drawParticles() {
+  for (const p of particles) {
+    ctx.globalAlpha = p.life / 30;
+    ctx.fillStyle = p.color;
+    ctx.fillRect(p.x, p.y, p.size, p.size);
+  }
+  ctx.globalAlpha = 1.0;
+}
+
+
 function playBrickSoundWithPitch(row) {
   if (!brickBuffer || !soundEnabled) return;
 
@@ -140,6 +183,7 @@ function collisionDetection() {
           }
           dy = -dy;
           b.status = 0;
+          createParticles(b);
           bricksRemaining--;
           score = score + 5 - r;
           if (score > highScore) {
@@ -336,6 +380,8 @@ function draw(delta) {
 
   drawPaddle();
   drawBricks();
+  updateParticles();
+  drawParticles();
   drawScore();
   if (gameState === 'playing')
     drawBall();
