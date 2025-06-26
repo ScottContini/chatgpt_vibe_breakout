@@ -104,8 +104,19 @@ function drawBricks() {
 }
 
 
+function lightenColor(hsl, amount) {
+  const match = hsl.match(/^hsl\((\d+),\s*(\d+)%,\s*(\d+)%\)$/);
+  if (!match) return hsl; // fallback
+
+  let [_, h, s, l] = match.map(Number);
+  l = Math.min(100, l + amount);
+  return `hsl(${h}, ${s}%, ${l}%)`;
+}
+
+
 // Particle effect for disintegrating bricks
 const particles = [];
+
 
 function createParticles(brick) {
   const particleCount = 10;
@@ -119,7 +130,7 @@ function createParticles(brick) {
       dx: (Math.random() - 0.5) * 4,
       dy: (Math.random() - 0.5) * 4,
       life: 30,
-      color: ctx.fillStyle,
+      color: lightenColor(ctx.fillStyle, 10),
       size: 2 + Math.random() * 2
     });
   }
