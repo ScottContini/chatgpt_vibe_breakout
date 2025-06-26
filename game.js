@@ -104,26 +104,45 @@ function drawBricks() {
 }
 
 
+function lightenColor(hsl, amount) {
+  const match = hsl.match(/^hsl\((\d+),\s*(\d+)%,\s*(\d+)%\)$/);
+  if (!match) return hsl; // fallback
+
+  let [_, h, s, l] = match.map(Number);
+  l = Math.min(100, l + amount);
+  return `hsl(${h}, ${s}%, ${l}%)`;
+}
+
+
 // Particle effect for disintegrating bricks
 const particles = [];
+const trailParticles = [];
 
-function createParticles(brick) {
+
+
+function createParticles(brick, hue) {
   const particleCount = 10;
   const brickCenterX = brick.x + brickWidth / 2;
   const brickCenterY = brick.y + brickHeight / 2;
 
   for (let i = 0; i < particleCount; i++) {
+    const hueVariation = hue + (Math.random() * 20 - 10); // ±10 degrees
+    const lightness = 60 + Math.random() * 20; // lighter glow
+    const alpha = 0.6 + Math.random() * 0.3; // some transparency
+
     particles.push({
       x: brickCenterX,
       y: brickCenterY,
       dx: (Math.random() - 0.5) * 4,
       dy: (Math.random() - 0.5) * 4,
       life: 30,
-      color: ctx.fillStyle,
+      color: `hsla(${hueVariation}, 100%, ${lightness}%, ${alpha})`,
       size: 2 + Math.random() * 2
     });
   }
 }
+
+
 
 function updateParticles() {
   for (let i = particles.length - 1; i >= 0; i--) {
@@ -138,12 +157,29 @@ function updateParticles() {
 }
 
 function drawParticles() {
-  for (const p of particles) {
-    ctx.globalAlpha = p.life / 30;
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
     ctx.fillStyle = p.color;
-    ctx.fillRect(p.x, p.y, p.size, p.size);
+
+    ctx.shadowColor = p.color;
+    ctx.shadowBlur = 8;  // glow size
+
+    ctx.fill();
+    ctx.closePath();
+
+    ctx.shadowBlur = 0; // reset for next draw
+    ctx.shadowColor = "transparent";
+
+    p.x += p.dx;
+    p.y += p.dy;
+    p.life--;
+
+    if (p.life <= 0) {
+      particles.splice(i, 1);
+    }
   }
-  ctx.globalAlpha = 1.0;
 }
 
 
@@ -183,7 +219,8 @@ function collisionDetection() {
           }
           dy = -dy;
           b.status = 0;
-          createParticles(b);
+          let hue = (level * 34) % 360;
+          createParticles(b, hue);
           bricksRemaining--;
           score = score + 5 - r;
           if (score > highScore) {
@@ -373,7 +410,41 @@ function loseLife() {
     }
 }
 
+function drawParticleTrails() {
 
+  // Emit a trail particle
+  trailParticles.push({
+    x: x,
+    y: y,
+    alpha: 1,
+    size: 3 + Math.random() * 2,
+    dx: (Math.random() - 0.5) * 0.5,
+    dy: (Math.random() - 0.5) * 0.5
+  });
+
+  // Update and draw trail particles
+  for (let i = trailParticles.length - 1; i >= 0; i--) {
+    const p = trailParticles[i];
+    p.x += p.dx;
+    p.y += p.dy;
+    p.alpha -= 0.02;
+    p.size *= 0.96;
+
+    if (p.alpha <= 0 || p.size <= 0.5) {
+      trailParticles.splice(i, 1);
+      continue;
+    }
+
+    ctx.globalAlpha = p.alpha;
+    ctx.fillStyle = "#ffffaa";
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.closePath();
+    ctx.globalAlpha = 1;
+  }
+
+}
 
 function draw(delta) {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -383,6 +454,8 @@ function draw(delta) {
   updateParticles();
   drawParticles();
   drawScore();
+  drawParticleTrails();
+
   if (gameState === 'playing')
     drawBall();
   if (gameState === 'waiting') {
