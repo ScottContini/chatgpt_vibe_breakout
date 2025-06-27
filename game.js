@@ -3,6 +3,11 @@ const ctx = canvas.getContext("2d");
 
 canvas.width = canvas.offsetWidth;
 canvas.height = canvas.offsetHeight;
+const BASE_WIDTH = 480;
+const BASE_HEIGHT = 360;
+const scaleX = canvas.width / BASE_WIDTH;
+const scaleY = canvas.height / BASE_HEIGHT;
+
 
 let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 let brickBuffer = null;
@@ -28,17 +33,19 @@ let level = 1;
 const brickRowCount = 5;
 const brickColumnCount = 7;
 let bricksRemaining = brickRowCount*brickColumnCount;
-const brickWidth = (canvas.width / 7) - 20;
-const brickHeight = 25;
-const brickPadding = 10;
+const baseBrickPadding = 10;
+const brickPadding = baseBrickPadding * scaleX;
+const brickWidth = (canvas.width - (brickColumnCount - 1) * brickPadding - 2 * brickPadding) / brickColumnCount;
+const brickHeight = 20 * scaleY
 const brickOffsetTop = 30;
-const brickOffsetLeft = 35;
-const paddleHeight = 10;
-const paddleWidth = canvas.width * 0.1;
+const totalBricksWidth = brickColumnCount * brickWidth + (brickColumnCount - 1) * brickPadding;
+const brickOffsetLeft = (canvas.width - totalBricksWidth) / 2;
+const paddleHeight = 10 * scaleY;
+const paddleWidth = 55 * scaleX;
 const paddleMarginBottom = paddleHeight * 2;
 const paddleY = canvas.height - paddleHeight - paddleMarginBottom;
 const paddleCollisionY = canvas.height - paddleMarginBottom - paddleHeight;
-const ballRadius = 10;
+const ballRadius = 5 * (scaleX + scaleY) / 2;
 const startDelay = 2000; // 2000 ms = 2 seconds pause
 let messageText = "";
 let messageTimer = 0;
@@ -62,12 +69,8 @@ let gameState = 'playing'; // 'playing', 'waiting', 'paused'
 // Ball variables
 let x = canvas.width * (0.4 + Math.random() * 0.2);
 let y = canvas.height - 100;
-// The base canvas size is 480 width, 360 height, but if people enlarge the screen, the ball goes slower.
-// Let's put in a speed scaling factor that tries to keep the speed the same regardless of screen size.
-let dx_scale = canvas.width / 480;
-let dy_scale = canvas.height / 360;
-let dx = 2 * dx_scale;
-let dy = -2 * dy_scale;
+let dx = 2 * scaleX;
+let dy = -2 * scaleY
 
 let paddleX = (canvas.width - paddleWidth) / 2;
 
