@@ -1,5 +1,16 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
+const bgImage = new Image();
+bgImage.src = "galaxy.png";
+const brickTexture = new Image();
+brickTexture.src = "brick_textures/brick1.png"; 
+let brickPattern = null;
+
+brickTexture.onload = function () {
+  brickPattern = ctx.createPattern(brickTexture, 'repeat');
+};
+
+
 
 canvas.width = canvas.offsetWidth;
 canvas.height = canvas.offsetHeight;
@@ -45,7 +56,7 @@ const paddleWidth = 55 * scaleX;
 const paddleMarginBottom = paddleHeight * 2;
 const paddleY = canvas.height - paddleHeight - paddleMarginBottom;
 const paddleCollisionY = canvas.height - paddleMarginBottom - paddleHeight;
-const ballRadius = 5 * (scaleX + scaleY) / 2;
+const ballRadius = 8 * (scaleX + scaleY) / 2;
 const startDelay = 2000; // 2000 ms = 2 seconds pause
 let messageText = "";
 let messageTimer = 0;
@@ -87,30 +98,43 @@ for (let c = 0; c < brickColumnCount; c++) {
   }
 }
 
-
-
 function drawBricks() {
   const hue = (level * 34) % 360;
 
   for (let c = 0; c < brickColumnCount; c++) {
     for (let r = 0; r < brickRowCount; r++) {
-      if (bricks[c][r].status === 1) {
+      const brick = bricks[c][r];
+      if (brick.status === 1) {
         const brickX = c * (brickWidth + brickPadding) + brickOffsetLeft;
         const brickY = r * (brickHeight + brickPadding) + brickOffsetTop;
-        bricks[c][r].x = brickX;
-        bricks[c][r].y = brickY;
+        brick.x = brickX;
+        brick.y = brickY;
 
         const lightness = 65 - r * 7;
 
+        // Step 1: Draw the colored background first
         ctx.beginPath();
         ctx.rect(brickX, brickY, brickWidth, brickHeight);
         ctx.fillStyle = `hsl(${hue}, 80%, ${lightness}%)`;
         ctx.fill();
         ctx.closePath();
+
+        // Step 2: Overlay texture with alpha (if available)
+        if (brickPattern) {
+          ctx.save(); // Save current drawing state
+          ctx.globalAlpha = 0.3; // Adjust for transparency (0.2 to 0.4 looks good)
+          ctx.fillStyle = brickPattern;
+          ctx.beginPath();
+          ctx.rect(brickX, brickY, brickWidth, brickHeight);
+          ctx.fill();
+          ctx.closePath();
+          ctx.restore(); // Restore alpha and state
+        }
       }
     }
   }
 }
+
 
 
 function lightenColor(hsl, amount) {
@@ -457,6 +481,7 @@ function drawParticleTrails() {
 
 function draw(delta) {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
 
   drawPaddle();
   drawBricks();
@@ -576,10 +601,10 @@ function resetGame() {
   messageText = "";
   messageTimer = 0;
 
-  x = canvas.width / 2;
+  x = canvas.width * (0.4 + Math.random() * 0.2);
   y = canvas.height - 100;
-  dx = 2;
-  dy = -2;
+  dx = 2 * scaleX;
+  dy = -2 * scaleY
   paddleX = (canvas.width - paddleWidth) / 2;
   gameState = 'waiting';
   startTime = Date.now();
