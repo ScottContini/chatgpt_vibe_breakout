@@ -42,6 +42,7 @@ let level = 1;
 const brickRowCount = 5;
 const brickColumnCount = 7;
 let bricksRemaining = brickRowCount*brickColumnCount;
+const bricks = [];
 const baseBrickPadding = 10;
 const brickPadding = baseBrickPadding * scaleX;
 const brickWidth = (canvas.width - (brickColumnCount - 1) * brickPadding - 2 * brickPadding) / brickColumnCount;
@@ -127,22 +128,26 @@ function generateBumpyRect(x, y, width, height) {
 }
 
 
-// Brick data structure (2D array)
-const bricks = [];
-for (let c = 0; c < brickColumnCount; c++) {
-  bricks[c] = [];
-  for (let r = 0; r < brickRowCount; r++) {
-    const brickX = c * (brickWidth + brickPadding) + brickOffsetLeft;
-    const brickY = r * (brickHeight + brickPadding) + brickOffsetTop;
 
-    bricks[c][r] = {
-      x: brickX,
-      y: brickY,
-      status: 1,
-      shapePath: generateBumpyRect(brickX, brickY, brickWidth, brickHeight)
-    };
+function initBricks() {
+  // Brick data structure (2D array)
+  for (let c = 0; c < brickColumnCount; c++) {
+    bricks[c] = [];
+    for (let r = 0; r < brickRowCount; r++) {
+      const brickX = c * (brickWidth + brickPadding) + brickOffsetLeft;
+      const brickY = r * (brickHeight + brickPadding) + brickOffsetTop;
+
+      bricks[c][r] = {
+        x: brickX,
+        y: brickY,
+        status: 1,
+        shapePath: generateBumpyRect(brickX, brickY, brickWidth, brickHeight)
+      };
+    }
   }
+  bricksRemaining = brickRowCount*brickColumnCount;
 }
+
 
 
 
@@ -442,6 +447,7 @@ function drawBall() {
 }
 
 
+
 function drawPaddle() {
   const paddleImage = document.getElementById("paddleTexture");
 
@@ -653,15 +659,9 @@ function startNextLevel() {
   y = canvas.height - 120;
   paddleX = (canvas.width - paddleWidth) / 2;
 
-  // Reset brick statuses
-  for (let c = 0; c < brickColumnCount; c++) {
-    for (let r = 0; r < brickRowCount; r++) {
-      bricks[c][r].status = 1;
-    }
-  }
+  initBricks();
 
   level++;
-  bricksRemaining = brickRowCount*brickColumnCount;
   startTime = Date.now();
   gameState = 'waiting';
 
@@ -708,6 +708,7 @@ function playSound(sound) {
 
 let lastTime = 0;
 
+initBricks();
 
 function gameLoop(timeStamp) {
   if (!gameStarted) return;
