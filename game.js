@@ -90,8 +90,8 @@ let leftPressed = false;
 // Make our bricks a bit bumpy
 function generateBumpyRect(x, y, width, height) {
   const path = new Path2D();
-  const bumpiness = 2; // pixel variation
-  const segments = 6; // number of segments per edge
+  const bumpiness = 3; // pixel variation
+  const segments = 4; // number of segments per edge
 
   // Top edge
   path.moveTo(x, y + Math.random() * bumpiness);
@@ -146,18 +146,6 @@ for (let c = 0; c < brickColumnCount; c++) {
 
 
 
-function drawBumpyRect(x, y, w, h) {
-  const bumpiness = 5; // adjust this for more or fewer bumps
-  ctx.beginPath();
-  ctx.moveTo(x, y);
-  ctx.lineTo(x + w + Math.random() * bumpiness, y + Math.random() * bumpiness);
-  ctx.lineTo(x + w + Math.random() * bumpiness, y + h + Math.random() * bumpiness);
-  ctx.lineTo(x + Math.random() * bumpiness, y + h + Math.random() * bumpiness);
-  ctx.closePath();
-}
-
-
-
 function drawBricks() {
   const textureImg = document.getElementById("brickTexture");
 
@@ -174,19 +162,13 @@ function drawBricks() {
     for (let r = 0; r < brickRowCount; r++) {
       const b = bricks[c][r];
       if (bricks[c][r].status === 1) {
-        //const brickX = c * (brickWidth + brickPadding) + brickOffsetLeft;
-        //const brickY = r * (brickHeight + brickPadding) + brickOffsetTop;
 
         const lightness = 75 - r * 7;
         const overlayColor = `hsla(${hue}, 80%, ${lightness}%, 0.6)`;
 
-        // Draw the textured base
         ctx.save();
-        ctx.beginPath();
-        ctx.clip(b.shapePath);
-        ctx.rect(b.x, b.y, brickWidth, brickHeight);
         ctx.fillStyle = pattern;
-        ctx.fill();
+        ctx.fill(b.shapePath);
         ctx.restore();
 
         ctx.fillStyle = overlayColor;
