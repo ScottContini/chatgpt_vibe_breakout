@@ -398,8 +398,19 @@ function drawBall() {
 
 
 function drawPaddle() {
-  ctx.fillStyle = "#0095DD";
-  ctx.fillRect(paddleX, paddleY, paddleWidth, paddleHeight);
+  const paddleImage = document.getElementById("paddleTexture");
+
+  // Create a repeating pattern from the image
+  const pattern = ctx.createPattern(paddleImage, "repeat");
+
+  if (pattern) {
+    ctx.fillStyle = pattern;
+    ctx.fillRect(paddleX, paddleY, paddleWidth, paddleHeight);
+  } else {
+    // fallback in case the image isn't loaded yet
+    ctx.fillStyle = "#0095DD";
+    ctx.fillRect(paddleX, paddleY, paddleWidth, paddleHeight);
+  }
 }
 
 
