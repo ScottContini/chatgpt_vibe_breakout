@@ -2,9 +2,7 @@ const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 const bgImage = new Image();
 bgImage.src = "galaxy.png";
-const brickTexture = new Image();
-brickTexture.src = "textures/brick1.png"; 
-let brickPattern = null;
+
 
 brickTexture.onload = function () {
   brickPattern = ctx.createPattern(brickTexture, 'repeat');
@@ -98,38 +96,53 @@ for (let c = 0; c < brickColumnCount; c++) {
   }
 }
 
+
+function drawBumpyRect(x, y, w, h) {
+  const bumpiness = 5; // adjust this for more or fewer bumps
+  ctx.beginPath();
+  ctx.moveTo(x, y);
+  ctx.lineTo(x + w + Math.random() * bumpiness, y + Math.random() * bumpiness);
+  ctx.lineTo(x + w + Math.random() * bumpiness, y + h + Math.random() * bumpiness);
+  ctx.lineTo(x + Math.random() * bumpiness, y + h + Math.random() * bumpiness);
+  ctx.closePath();
+}
+
+
 function drawBricks() {
+  const textureImg = document.getElementById("brickTexture");
+
+  // Ensure texture is loaded
+  if (!textureImg.complete) {
+    textureImg.onload = () => drawBricks();
+    return;
+  }
+
+  const pattern = ctx.createPattern(textureImg, "repeat");
   const hue = (level * 34) % 360;
 
   for (let c = 0; c < brickColumnCount; c++) {
     for (let r = 0; r < brickRowCount; r++) {
-      const brick = bricks[c][r];
-      if (brick.status === 1) {
+      if (bricks[c][r].status === 1) {
         const brickX = c * (brickWidth + brickPadding) + brickOffsetLeft;
         const brickY = r * (brickHeight + brickPadding) + brickOffsetTop;
-        brick.x = brickX;
-        brick.y = brickY;
+        bricks[c][r].x = brickX;
+        bricks[c][r].y = brickY;
 
-        const lightness = 65 - r * 7;
+        const lightness = 75 - r * 7;
+        const overlayColor = `hsla(${hue}, 80%, ${lightness}%, 0.6)`;
 
-        // Step 1: Draw the colored background first
+        // Draw the textured base
+        ctx.save();
         ctx.beginPath();
         ctx.rect(brickX, brickY, brickWidth, brickHeight);
-        ctx.fillStyle = `hsl(${hue}, 80%, ${lightness}%)`;
+        ctx.clip(); // limit texture to brick bounds
+        ctx.fillStyle = pattern;
         ctx.fill();
-        ctx.closePath();
+        ctx.restore();
 
-        // Step 2: Overlay texture with alpha (if available)
-        if (brickPattern) {
-          ctx.save(); // Save current drawing state
-          ctx.globalAlpha = 0.3; // Adjust for transparency (0.2 to 0.4 looks good)
-          ctx.fillStyle = brickPattern;
-          ctx.beginPath();
-          ctx.rect(brickX, brickY, brickWidth, brickHeight);
-          ctx.fill();
-          ctx.closePath();
-          ctx.restore(); // Restore alpha and state
-        }
+        // Overlay color tint
+        ctx.fillStyle = overlayColor;
+        ctx.fillRect(brickX, brickY, brickWidth, brickHeight);
       }
     }
   }
