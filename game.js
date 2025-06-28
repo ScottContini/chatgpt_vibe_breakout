@@ -3,7 +3,7 @@ const ctx = canvas.getContext("2d");
 const bgImage = new Image();
 bgImage.src = "galaxy.png";
 const brickTexture = new Image();
-brickTexture.src = "brick_textures/brick1.png"; 
+brickTexture.src = "textures/brick1.png"; 
 let brickPattern = null;
 
 brickTexture.onload = function () {
@@ -372,12 +372,30 @@ function keyUpHandler(e) {
 }
 
 function drawBall() {
+  const texture = document.getElementById("ballTexture");
+
+  // Create a circular clip for the ball shape
+  ctx.save();
   ctx.beginPath();
   ctx.arc(x, y, ballRadius, 0, Math.PI * 2);
-  ctx.fillStyle = "#ffffff"; // White ball
-  ctx.fill();
   ctx.closePath();
+  ctx.clip();
+
+  // Fill the ball area with the texture
+  ctx.drawImage(texture, x - ballRadius, y - ballRadius, ballRadius * 2, ballRadius * 2);
+
+  ctx.restore();
+
+  // Optional: add a subtle highlight overlay for extra shine
+  const gradient = ctx.createRadialGradient(x, y, 0, x, y, ballRadius);
+  gradient.addColorStop(0, "rgba(255,255,255,0.4)");
+  gradient.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.fillStyle = gradient;
+  ctx.beginPath();
+  ctx.arc(x, y, ballRadius, 0, Math.PI * 2);
+  ctx.fill();
 }
+
 
 function drawPaddle() {
   ctx.fillStyle = "#0095DD";
