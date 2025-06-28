@@ -87,14 +87,63 @@ let paddleX = (canvas.width - paddleWidth) / 2;
 let rightPressed = false;
 let leftPressed = false;
 
+// Make our bricks a bit bumpy
+function generateBumpyRect(x, y, width, height) {
+  const path = new Path2D();
+  const bumpiness = 2; // pixel variation
+  const segments = 6; // number of segments per edge
+
+  // Top edge
+  path.moveTo(x, y + Math.random() * bumpiness);
+  for (let i = 1; i <= segments; i++) {
+    const px = x + (i * width) / segments;
+    const py = y + Math.random() * bumpiness;
+    path.lineTo(px, py);
+  }
+
+  // Right edge
+  for (let i = 1; i <= segments; i++) {
+    const px = x + width + Math.random() * bumpiness;
+    const py = y + (i * height) / segments;
+    path.lineTo(px, py);
+  }
+
+  // Bottom edge
+  for (let i = 1; i <= segments; i++) {
+    const px = x + width - (i * width) / segments;
+    const py = y + height - Math.random() * bumpiness;
+    path.lineTo(px, py);
+  }
+
+  // Left edge
+  for (let i = 1; i <= segments; i++) {
+    const px = x - Math.random() * bumpiness;
+    const py = y + height - (i * height) / segments;
+    path.lineTo(px, py);
+  }
+
+  path.closePath();
+  return path;
+}
+
+
 // Brick data structure (2D array)
 const bricks = [];
 for (let c = 0; c < brickColumnCount; c++) {
   bricks[c] = [];
   for (let r = 0; r < brickRowCount; r++) {
-    bricks[c][r] = { x: 0, y: 0, status: 1 }; // status: 1 = visible, 0 = broken
+    const brickX = c * (brickWidth + brickPadding) + brickOffsetLeft;
+    const brickY = r * (brickHeight + brickPadding) + brickOffsetTop;
+
+    bricks[c][r] = {
+      x: brickX,
+      y: brickY,
+      status: 1,
+      shapePath: generateBumpyRect(brickX, brickY, brickWidth, brickHeight)
+    };
   }
 }
+
 
 
 function drawBumpyRect(x, y, w, h) {
@@ -106,6 +155,7 @@ function drawBumpyRect(x, y, w, h) {
   ctx.lineTo(x + Math.random() * bumpiness, y + h + Math.random() * bumpiness);
   ctx.closePath();
 }
+
 
 
 function drawBricks() {
@@ -122,11 +172,10 @@ function drawBricks() {
 
   for (let c = 0; c < brickColumnCount; c++) {
     for (let r = 0; r < brickRowCount; r++) {
+      const b = bricks[c][r];
       if (bricks[c][r].status === 1) {
-        const brickX = c * (brickWidth + brickPadding) + brickOffsetLeft;
-        const brickY = r * (brickHeight + brickPadding) + brickOffsetTop;
-        bricks[c][r].x = brickX;
-        bricks[c][r].y = brickY;
+        //const brickX = c * (brickWidth + brickPadding) + brickOffsetLeft;
+        //const brickY = r * (brickHeight + brickPadding) + brickOffsetTop;
 
         const lightness = 75 - r * 7;
         const overlayColor = `hsla(${hue}, 80%, ${lightness}%, 0.6)`;
@@ -134,19 +183,20 @@ function drawBricks() {
         // Draw the textured base
         ctx.save();
         ctx.beginPath();
-        ctx.rect(brickX, brickY, brickWidth, brickHeight);
-        ctx.clip(); // limit texture to brick bounds
+        ctx.clip(b.shapePath);
+        ctx.rect(b.x, b.y, brickWidth, brickHeight);
         ctx.fillStyle = pattern;
         ctx.fill();
         ctx.restore();
 
-        // Overlay color tint
         ctx.fillStyle = overlayColor;
-        ctx.fillRect(brickX, brickY, brickWidth, brickHeight);
+        ctx.fill(b.shapePath);
+
       }
     }
   }
 }
+
 
 
 
