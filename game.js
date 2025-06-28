@@ -2,9 +2,7 @@ const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 const bgImage = new Image();
 bgImage.src = "galaxy.png";
-const brickTexture = new Image();
-brickTexture.src = "textures/brick1.png"; 
-let brickPattern = null;
+
 
 brickTexture.onload = function () {
   brickPattern = ctx.createPattern(brickTexture, 'repeat');
@@ -89,51 +87,98 @@ let paddleX = (canvas.width - paddleWidth) / 2;
 let rightPressed = false;
 let leftPressed = false;
 
+// Make our bricks a bit bumpy
+function generateBumpyRect(x, y, width, height) {
+  const path = new Path2D();
+  const bumpiness = 3; // pixel variation
+  const segments = 4; // number of segments per edge
+
+  // Top edge
+  path.moveTo(x, y + Math.random() * bumpiness);
+  for (let i = 1; i <= segments; i++) {
+    const px = x + (i * width) / segments;
+    const py = y + Math.random() * bumpiness;
+    path.lineTo(px, py);
+  }
+
+  // Right edge
+  for (let i = 1; i <= segments; i++) {
+    const px = x + width + Math.random() * bumpiness;
+    const py = y + (i * height) / segments;
+    path.lineTo(px, py);
+  }
+
+  // Bottom edge
+  for (let i = 1; i <= segments; i++) {
+    const px = x + width - (i * width) / segments;
+    const py = y + height - Math.random() * bumpiness;
+    path.lineTo(px, py);
+  }
+
+  // Left edge
+  for (let i = 1; i <= segments; i++) {
+    const px = x - Math.random() * bumpiness;
+    const py = y + height - (i * height) / segments;
+    path.lineTo(px, py);
+  }
+
+  path.closePath();
+  return path;
+}
+
+
 // Brick data structure (2D array)
 const bricks = [];
 for (let c = 0; c < brickColumnCount; c++) {
   bricks[c] = [];
   for (let r = 0; r < brickRowCount; r++) {
-    bricks[c][r] = { x: 0, y: 0, status: 1 }; // status: 1 = visible, 0 = broken
+    const brickX = c * (brickWidth + brickPadding) + brickOffsetLeft;
+    const brickY = r * (brickHeight + brickPadding) + brickOffsetTop;
+
+    bricks[c][r] = {
+      x: brickX,
+      y: brickY,
+      status: 1,
+      shapePath: generateBumpyRect(brickX, brickY, brickWidth, brickHeight)
+    };
   }
 }
 
+
+
 function drawBricks() {
+  const textureImg = document.getElementById("brickTexture");
+
+  // Ensure texture is loaded
+  if (!textureImg.complete) {
+    textureImg.onload = () => drawBricks();
+    return;
+  }
+
+  const pattern = ctx.createPattern(textureImg, "repeat");
   const hue = (level * 34) % 360;
 
   for (let c = 0; c < brickColumnCount; c++) {
     for (let r = 0; r < brickRowCount; r++) {
-      const brick = bricks[c][r];
-      if (brick.status === 1) {
-        const brickX = c * (brickWidth + brickPadding) + brickOffsetLeft;
-        const brickY = r * (brickHeight + brickPadding) + brickOffsetTop;
-        brick.x = brickX;
-        brick.y = brickY;
+      const b = bricks[c][r];
+      if (bricks[c][r].status === 1) {
 
-        const lightness = 65 - r * 7;
+        const lightness = 75 - r * 7;
+        const overlayColor = `hsla(${hue}, 80%, ${lightness}%, 0.6)`;
 
-        // Step 1: Draw the colored background first
-        ctx.beginPath();
-        ctx.rect(brickX, brickY, brickWidth, brickHeight);
-        ctx.fillStyle = `hsl(${hue}, 80%, ${lightness}%)`;
-        ctx.fill();
-        ctx.closePath();
+        ctx.save();
+        ctx.fillStyle = pattern;
+        ctx.fill(b.shapePath);
+        ctx.restore();
 
-        // Step 2: Overlay texture with alpha (if available)
-        if (brickPattern) {
-          ctx.save(); // Save current drawing state
-          ctx.globalAlpha = 0.3; // Adjust for transparency (0.2 to 0.4 looks good)
-          ctx.fillStyle = brickPattern;
-          ctx.beginPath();
-          ctx.rect(brickX, brickY, brickWidth, brickHeight);
-          ctx.fill();
-          ctx.closePath();
-          ctx.restore(); // Restore alpha and state
-        }
+        ctx.fillStyle = overlayColor;
+        ctx.fill(b.shapePath);
+
       }
     }
   }
 }
+
 
 
 
