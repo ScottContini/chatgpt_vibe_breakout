@@ -18,14 +18,19 @@ const scaleX = canvas.width / BASE_WIDTH;
 const scaleY = canvas.height / BASE_HEIGHT;
 
 const levelHues = [
-  0,   // red
+  275, // Cosmic Purple
+  0,   // Solar Flare Red
+  160, // Alien Green
   290, // purple
+  200, // Nebula Teal
+  45,  // Meteor Gold
+  220, // Deep Space Blue
+  300, // Galactic Magenta
   180, // aqua
-  60,  // yellow
   30,  // orange
-  120, // green
-  210 // cool blue
+  60,  // yellow
 ];
+
 
 
 let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
