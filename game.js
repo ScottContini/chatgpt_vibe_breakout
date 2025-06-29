@@ -130,6 +130,7 @@ function initBricks(rows = 5, cols = 7) {
   brickRowCount = rows;
   brickColumnCount = cols;
   bricksRemaining = 0;
+  const baseHue = (272 + level * 34) % 360;
 
   for (let c = 0; c < brickColumnCount; c++) {
     bricks[c] = [];
@@ -139,6 +140,7 @@ function initBricks(rows = 5, cols = 7) {
 
       const status = 1; // could randomize later
       if (status === 1) bricksRemaining++;
+      const hue = baseHue;  // we may choose to vary the hue based upon a variety of factors
 
       bricks[c][r] = {
         x: brickX,
@@ -146,6 +148,7 @@ function initBricks(rows = 5, cols = 7) {
         status: status,
         hitPoints: 1,
         type: "normal",
+        hue: hue,
         shapePath: generateBumpyRect(brickX, brickY, brickWidth, brickHeight)
       };
     }
@@ -164,11 +167,11 @@ function drawBricks() {
   }
 
   const pattern = ctx.createPattern(textureImg, "repeat");
-  const hue = (level * 34) % 360;
 
   for (let c = 0; c < brickColumnCount; c++) {
     for (let r = 0; r < brickRowCount; r++) {
       const b = bricks[c][r];
+      const hue = b.hue;
       if (bricks[c][r].status === 1) {
 
         const lightness = 75 - r * 7;
@@ -206,13 +209,13 @@ const trailParticles = [];
 
 
 
-function createParticles(brick, hue) {
+function createParticles(brick) {
   const particleCount = 10;
   const brickCenterX = brick.x + brickWidth / 2;
   const brickCenterY = brick.y + brickHeight / 2;
 
   for (let i = 0; i < particleCount; i++) {
-    const hueVariation = hue + (Math.random() * 20 - 10); // ±10 degrees
+    const hueVariation = brick.hue + (Math.random() * 20 - 10); // +10 or -10 degrees
     const lightness = 60 + Math.random() * 20; // lighter glow
     const alpha = 0.6 + Math.random() * 0.3; // some transparency
 
@@ -305,8 +308,7 @@ function collisionDetection() {
           }
           dy = -dy;
           b.status = 0;
-          let hue = (level * 34) % 360;
-          createParticles(b, hue);
+          createParticles(b);
           bricksRemaining--;
           score = score + 5 - r;
           if (score > highScore) {
@@ -689,13 +691,7 @@ function resetGame() {
   level = 1;
   lives = 3;
 
-  // Reset bricks
-  for (let c = 0; c < brickColumnCount; c++) {
-    for (let r = 0; r < brickRowCount; r++) {
-      bricks[c][r].status = 1;
-    }
-  }
-  bricksRemaining = brickRowCount * brickColumnCount;
+  initBricks();
 }
 
 
