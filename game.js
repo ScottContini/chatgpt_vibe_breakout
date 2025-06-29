@@ -55,16 +55,9 @@ fetch("sounds/brick.wav")
 // Game settings
 let level = 1;
 let brickRowCount = 5;
-let brickColumnCount = 7;
-let bricksRemaining = brickRowCount*brickColumnCount;
+let brickColumnCount = 17;
+let bricksRemaining;
 const bricks = [];
-const baseBrickPadding = 10;
-const brickPadding = baseBrickPadding * scaleX;
-const brickWidth = (canvas.width - (brickColumnCount - 1) * brickPadding - 2 * brickPadding) / brickColumnCount;
-const brickHeight = 20 * scaleY
-const brickOffsetTop = 30;
-const totalBricksWidth = brickColumnCount * brickWidth + (brickColumnCount - 1) * brickPadding;
-const brickOffsetLeft = (canvas.width - totalBricksWidth) / 2;
 const paddleHeight = 10 * scaleY;
 const paddleWidth = 55 * scaleX;
 const paddleMarginBottom = paddleHeight * 2;
@@ -140,12 +133,20 @@ function generateBumpyRect(x, y, width, height) {
 }
 
 
-
-function initBricks(rows = 5, cols = 7) {
-  brickRowCount = rows;
-  brickColumnCount = cols;
-  bricksRemaining = 0;
+function initBricks() {
+  brickRowCount = 5;
+  brickColumnCount = 8;
+  bricks.length = 0;
+  const baseBrickPadding = 10;
   const baseHue = levelHues[(level - 1) % levelHues.length];
+  const brickPadding = baseBrickPadding * scaleX;
+  const brickWidth = (canvas.width - (brickColumnCount - 1) * brickPadding - 2 * brickPadding) / brickColumnCount;
+  const brickHeight = 20 * scaleY;
+  const brickOffsetTop = 30 * scaleY;
+  const totalBricksWidth = brickColumnCount * brickWidth + (brickColumnCount - 1) * brickPadding;
+  const brickOffsetLeft = (canvas.width - totalBricksWidth) / 2;
+
+  bricksRemaining = 0;
 
   for (let c = 0; c < brickColumnCount; c++) {
     bricks[c] = [];
@@ -153,21 +154,29 @@ function initBricks(rows = 5, cols = 7) {
       const brickX = c * (brickWidth + brickPadding) + brickOffsetLeft;
       const brickY = r * (brickHeight + brickPadding) + brickOffsetTop;
 
-      const status = 1; // could randomize later
+      const status = 1;
       if (status === 1) bricksRemaining++;
-      const hue = baseHue;
 
       bricks[c][r] = {
         x: brickX,
         y: brickY,
-        status: status,
+        status,
         hitPoints: 1,
         type: "normal",
-        hue: hue,
+        hue: baseHue + (Math.random() * 8 - 4),
+        brickWidth: brickWidth,
+        brickHeight: brickHeight,
         shapePath: generateBumpyRect(brickX, brickY, brickWidth, brickHeight)
       };
     }
   }
+
+  // Make these accessible globally if needed later
+  window.brickPadding = brickPadding;
+  window.brickWidth = brickWidth;
+  window.brickHeight = brickHeight;
+  window.brickOffsetLeft = brickOffsetLeft;
+  window.brickOffsetTop = brickOffsetTop;
 }
 
 
@@ -314,9 +323,9 @@ function collisionDetection() {
       if (b.status === 1) {
         if (
           x > b.x &&
-          x < b.x + brickWidth &&
+          x < b.x + b.brickWidth &&
           y > b.y &&
-          y < b.y + brickHeight
+          y < b.y + b.brickHeight
         ) {
           if (soundEnabled) {
             playBrickSoundWithPitch(r);
