@@ -17,6 +17,21 @@ const BASE_HEIGHT = 360;
 const scaleX = canvas.width / BASE_WIDTH;
 const scaleY = canvas.height / BASE_HEIGHT;
 
+const levelHues = [
+  275, // Cosmic Purple
+  0,   // Solar Flare Red
+  160, // Alien Green
+  290, // purple
+  200, // Nebula Teal
+  45,  // Meteor Gold
+  220, // Deep Space Blue
+  300, // Galactic Magenta
+  180, // aqua
+  30,  // orange
+  60,  // yellow
+];
+
+
 
 let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 let brickBuffer = null;
@@ -39,17 +54,10 @@ fetch("sounds/brick.wav")
 
 // Game settings
 let level = 1;
-const brickRowCount = 5;
-const brickColumnCount = 7;
-let bricksRemaining = brickRowCount*brickColumnCount;
+let brickRowCount = 5;
+let brickColumnCount = 17;
+let bricksRemaining;
 const bricks = [];
-const baseBrickPadding = 10;
-const brickPadding = baseBrickPadding * scaleX;
-const brickWidth = (canvas.width - (brickColumnCount - 1) * brickPadding - 2 * brickPadding) / brickColumnCount;
-const brickHeight = 20 * scaleY
-const brickOffsetTop = 30;
-const totalBricksWidth = brickColumnCount * brickWidth + (brickColumnCount - 1) * brickPadding;
-const brickOffsetLeft = (canvas.width - totalBricksWidth) / 2;
 const paddleHeight = 10 * scaleY;
 const paddleWidth = 55 * scaleX;
 const paddleMarginBottom = paddleHeight * 2;
@@ -65,9 +73,6 @@ let gameStarted = false;
 let lives = 3;
 
 
-
-
-
 // Game state
 let score = 0;
 let highScore = localStorage.getItem("breakoutHighScore") || 0;
@@ -77,10 +82,10 @@ let gameState = 'playing'; // 'playing', 'waiting', 'paused'
 
 
 // Ball variables
-let x = canvas.width * (0.4 + Math.random() * 0.2);
-let y = canvas.height - 100;
+let x = canvas.width * (0.4 + Math.random() * 0.2); // start somewhere near the middle
+let y = canvas.height - 100;  // put y-position near the paddle
 let dx = 2 * scaleX;
-let dy = -2 * scaleY
+let dy = -2 * scaleY  // initially ball is going upward so user has time to prepare for it
 
 let paddleX = (canvas.width - paddleWidth) / 2;
 
@@ -92,7 +97,7 @@ let leftPressed = false;
 function generateBumpyRect(x, y, width, height) {
   const path = new Path2D();
   const bumpiness = 3; // pixel variation
-  const segments = 4; // number of segments per edge
+  const segments = 5; // number of segments per edge
 
   // Top edge
   path.moveTo(x, y + Math.random() * bumpiness);
@@ -128,26 +133,51 @@ function generateBumpyRect(x, y, width, height) {
 }
 
 
-
 function initBricks() {
-  // Brick data structure (2D array)
+  brickRowCount = 5;
+  brickColumnCount = 8;
+  bricks.length = 0;
+  const baseBrickPadding = 10;
+  const baseHue = levelHues[(level - 1) % levelHues.length];
+  const brickPadding = baseBrickPadding * scaleX;
+  const brickWidth = (canvas.width - (brickColumnCount - 1) * brickPadding - 2 * brickPadding) / brickColumnCount;
+  const brickHeight = 20 * scaleY;
+  const brickOffsetTop = 30 * scaleY;
+  const totalBricksWidth = brickColumnCount * brickWidth + (brickColumnCount - 1) * brickPadding;
+  const brickOffsetLeft = (canvas.width - totalBricksWidth) / 2;
+
+  bricksRemaining = 0;
+
   for (let c = 0; c < brickColumnCount; c++) {
     bricks[c] = [];
     for (let r = 0; r < brickRowCount; r++) {
       const brickX = c * (brickWidth + brickPadding) + brickOffsetLeft;
       const brickY = r * (brickHeight + brickPadding) + brickOffsetTop;
 
+      const status = 1;
+      if (status === 1) bricksRemaining++;
+
       bricks[c][r] = {
         x: brickX,
         y: brickY,
-        status: 1,
+        status,
+        hitPoints: 1,
+        type: "normal",
+        hue: baseHue + (Math.random() * 8 - 4),
+        brickWidth: brickWidth,
+        brickHeight: brickHeight,
         shapePath: generateBumpyRect(brickX, brickY, brickWidth, brickHeight)
       };
     }
   }
-  bricksRemaining = brickRowCount*brickColumnCount;
-}
 
+  // Make these accessible globally if needed later
+  window.brickPadding = brickPadding;
+  window.brickWidth = brickWidth;
+  window.brickHeight = brickHeight;
+  window.brickOffsetLeft = brickOffsetLeft;
+  window.brickOffsetTop = brickOffsetTop;
+}
 
 
 
@@ -161,14 +191,14 @@ function drawBricks() {
   }
 
   const pattern = ctx.createPattern(textureImg, "repeat");
-  const hue = (level * 34) % 360;
 
   for (let c = 0; c < brickColumnCount; c++) {
     for (let r = 0; r < brickRowCount; r++) {
       const b = bricks[c][r];
+      const hue = b.hue;
       if (bricks[c][r].status === 1) {
 
-        const lightness = 75 - r * 7;
+        const lightness = 75 - r * 9;
         const overlayColor = `hsla(${hue}, 80%, ${lightness}%, 0.6)`;
 
         ctx.save();
@@ -203,13 +233,13 @@ const trailParticles = [];
 
 
 
-function createParticles(brick, hue) {
+function createParticles(brick) {
   const particleCount = 10;
   const brickCenterX = brick.x + brickWidth / 2;
   const brickCenterY = brick.y + brickHeight / 2;
 
   for (let i = 0; i < particleCount; i++) {
-    const hueVariation = hue + (Math.random() * 20 - 10); // ±10 degrees
+    const hueVariation = brick.hue + (Math.random() * 20 - 10); // +10 or -10 degrees
     const lightness = 60 + Math.random() * 20; // lighter glow
     const alpha = 0.6 + Math.random() * 0.3; // some transparency
 
@@ -293,17 +323,16 @@ function collisionDetection() {
       if (b.status === 1) {
         if (
           x > b.x &&
-          x < b.x + brickWidth &&
+          x < b.x + b.brickWidth &&
           y > b.y &&
-          y < b.y + brickHeight
+          y < b.y + b.brickHeight
         ) {
           if (soundEnabled) {
             playBrickSoundWithPitch(r);
           }
           dy = -dy;
           b.status = 0;
-          let hue = (level * 34) % 360;
-          createParticles(b, hue);
+          createParticles(b);
           bricksRemaining--;
           score = score + 5 - r;
           if (score > highScore) {
@@ -577,8 +606,7 @@ function draw(delta) {
       gameState = 'playing';
     }
     drawBall();
-}
-
+  }
 
   // Paddle movement
   if (rightPressed && paddleX < canvas.width - paddleWidth) {
@@ -597,8 +625,8 @@ function draw(delta) {
     // too far to the left
     dx = Math.abs(dx);
 
+  // Detect whether there is paddle collision
   const ballWithinPaddleZone = y + dy > paddleCollisionY && y + dy < paddleCollisionY + paddleHeight;
-
   if (y + dy < ballRadius) {
     dy = Math.abs(dy);
   } else if (ballWithinPaddleZone) {
@@ -614,6 +642,7 @@ function draw(delta) {
     loseLife();
   }
 
+  // ball movement
   if (gameState === 'playing') {
     x += dx * (delta / 10.0);
     y += dy * (delta / 10.0);
@@ -659,9 +688,9 @@ function startNextLevel() {
   y = canvas.height - 120;
   paddleX = (canvas.width - paddleWidth) / 2;
 
+  level++;
   initBricks();
 
-  level++;
   startTime = Date.now();
   gameState = 'waiting';
 
@@ -686,13 +715,7 @@ function resetGame() {
   level = 1;
   lives = 3;
 
-  // Reset bricks
-  for (let c = 0; c < brickColumnCount; c++) {
-    for (let r = 0; r < brickRowCount; r++) {
-      bricks[c][r].status = 1;
-    }
-  }
-  bricksRemaining = brickRowCount * brickColumnCount;
+  initBricks();
 }
 
 
