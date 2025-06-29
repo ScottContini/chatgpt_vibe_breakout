@@ -150,8 +150,8 @@ function brickAt(r, c, pattern, rows, cols) {
 
 function generateBumpyRect(x, y, width, height) {
   const path = new Path2D();
-  const baseBumpiness = 3; 
-  const baseSegments = 8; 
+  const baseBumpiness = 3;
+  const baseSegments = 4;
 
   let bumpiness = baseBumpiness * (1 + Math.random() - 0.5);  // how bumpy?
   let segments = baseSegments * (1 + Math.random() - 0.5);   // number of segments per edge
@@ -164,23 +164,14 @@ function generateBumpyRect(x, y, width, height) {
     const endY = y + Math.random() * bumpiness;
     const cpX = (startX + endX) / 2;
     const cpY = y - Math.random() * bumpiness;
-    path.lineTo(cpX, cpY, endX, endY);
+    path.quadraticCurveTo(cpX, cpY, endX, endY);
     startX = endX;
     startY = endY;
   }
 
-  bumpiness = baseBumpiness * (1 + Math.random() - 0.5);
-  segments = baseSegments * (1 + Math.random() - 0.5);
-  // Right edge
-  for (let i = 1; i <= segments; i++) {
-    const endX = x + width + Math.random() * bumpiness;
-    const endY = y + (i * height) / segments;
-    const cpX = x + width + Math.random() * bumpiness;
-    const cpY = (startY + endY) / 2;
-    path.lineTo(cpX, cpY, endX, endY);
-    startX = endX;
-    startY = endY;
-  }
+  // right edge
+  const arcRadius = height / 2.7;
+  path.arc(x + width + 2, y + height / 2, arcRadius, -Math.PI / 2, Math.PI / 2, false);
 
   bumpiness = baseBumpiness * (1 + Math.random() - 0.5);
   segments = baseSegments * (1 + Math.random() - 0.5);
@@ -190,23 +181,13 @@ function generateBumpyRect(x, y, width, height) {
     const endY = y + height - Math.random() * bumpiness;
     const cpX = (startX + endX) / 2;
     const cpY = y + height + Math.random() * bumpiness;
-    path.lineTo(cpX, cpY, endX, endY);
+    path.quadraticCurveTo(cpX, cpY, endX, endY);
     startX = endX;
     startY = endY;
   }
 
-  bumpiness = baseBumpiness * (1 + Math.random() - 0.5);
-  segments = baseSegments * (1 + Math.random() - 0.5);
-  // Left edge
-  for (let i = 1; i <= segments; i++) {
-    const endX = x - Math.random() * bumpiness;
-    const endY = y + height - (i * height) / segments;
-    const cpX = x - Math.random() * bumpiness;
-    const cpY = (startY + endY) / 2;
-    path.lineTo(cpX, cpY, endX, endY);
-    startX = endX;
-    startY = endY;
-  }
+  // left edge
+  path.arc(x - 2, y + height / 2, arcRadius, Math.PI / 2, -Math.PI / 2, false);
 
   path.closePath();
   return path;
@@ -225,15 +206,17 @@ function initBricks() {
   else if (brickRowCount < 7)
     ++brickRowCount;
 
-  const baseBrickPadding = 10;
+  const baseHorizontalBrickPadding = 18;
+  const baseVerticalBrickPadding = 10;
   const pattern = levelPatterns[(level - 1) % levelPatterns.length];
   const baseHue = levelHues[(level - 1) % levelHues.length];
 
-  const brickPadding = baseBrickPadding * scaleX;
-  const brickWidth = (canvas.width - (brickColumnCount - 1) * brickPadding - 2 * brickPadding) / brickColumnCount;
+  const brickHorizontalPadding = baseHorizontalBrickPadding * scaleX;
+  const brickVerticalPadding = baseVerticalBrickPadding * scaleY;
+  const brickWidth = (canvas.width - (brickColumnCount - 1) * brickHorizontalPadding - 2 * brickHorizontalPadding) / brickColumnCount;
   const brickHeight = 20 * scaleY;
   const brickOffsetTop = 30 * scaleY;
-  const totalBricksWidth = brickColumnCount * brickWidth + (brickColumnCount - 1) * brickPadding;
+  const totalBricksWidth = brickColumnCount * brickWidth + (brickColumnCount - 1) * brickHorizontalPadding;
   const brickOffsetLeft = (canvas.width - totalBricksWidth) / 2;
 
   bricksRemaining = 0;
@@ -246,8 +229,8 @@ function initBricks() {
         continue;
       }
 
-      const brickX = c * (brickWidth + brickPadding) + brickOffsetLeft;
-      const brickY = r * (brickHeight + brickPadding) + brickOffsetTop;
+      const brickX = c * (brickWidth + brickHorizontalPadding) + brickOffsetLeft;
+      const brickY = r * (brickHeight + brickVerticalPadding) + brickOffsetTop;
 
       bricks[c][r] = {
         x: brickX,
@@ -265,7 +248,6 @@ function initBricks() {
   }
 
   // Expose for global access
-  window.brickPadding = brickPadding;
   window.brickWidth = brickWidth;
   window.brickHeight = brickHeight;
   window.brickOffsetLeft = brickOffsetLeft;
