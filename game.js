@@ -39,8 +39,8 @@ fetch("sounds/brick.wav")
 
 // Game settings
 let level = 1;
-const brickRowCount = 5;
-const brickColumnCount = 7;
+let brickRowCount = 5;
+let brickColumnCount = 7;
 let bricksRemaining = brickRowCount*brickColumnCount;
 const bricks = [];
 const baseBrickPadding = 10;
@@ -65,9 +65,6 @@ let gameStarted = false;
 let lives = 3;
 
 
-
-
-
 // Game state
 let score = 0;
 let highScore = localStorage.getItem("breakoutHighScore") || 0;
@@ -77,10 +74,10 @@ let gameState = 'playing'; // 'playing', 'waiting', 'paused'
 
 
 // Ball variables
-let x = canvas.width * (0.4 + Math.random() * 0.2);
-let y = canvas.height - 100;
+let x = canvas.width * (0.4 + Math.random() * 0.2); // start somewhere near the middle
+let y = canvas.height - 100;  // put y-position near the paddle
 let dx = 2 * scaleX;
-let dy = -2 * scaleY
+let dy = -2 * scaleY  // initially ball is going upward so user has time to prepare for it
 
 let paddleX = (canvas.width - paddleWidth) / 2;
 
@@ -129,25 +126,31 @@ function generateBumpyRect(x, y, width, height) {
 
 
 
-function initBricks() {
-  // Brick data structure (2D array)
+function initBricks(rows = 5, cols = 7) {
+  brickRowCount = rows;
+  brickColumnCount = cols;
+  bricksRemaining = 0;
+
   for (let c = 0; c < brickColumnCount; c++) {
     bricks[c] = [];
     for (let r = 0; r < brickRowCount; r++) {
       const brickX = c * (brickWidth + brickPadding) + brickOffsetLeft;
       const brickY = r * (brickHeight + brickPadding) + brickOffsetTop;
 
+      const status = 1; // could randomize later
+      if (status === 1) bricksRemaining++;
+
       bricks[c][r] = {
         x: brickX,
         y: brickY,
-        status: 1,
+        status: status,
+        hitPoints: 1,
+        type: "normal",
         shapePath: generateBumpyRect(brickX, brickY, brickWidth, brickHeight)
       };
     }
   }
-  bricksRemaining = brickRowCount*brickColumnCount;
 }
-
 
 
 
@@ -577,8 +580,7 @@ function draw(delta) {
       gameState = 'playing';
     }
     drawBall();
-}
-
+  }
 
   // Paddle movement
   if (rightPressed && paddleX < canvas.width - paddleWidth) {
@@ -597,8 +599,8 @@ function draw(delta) {
     // too far to the left
     dx = Math.abs(dx);
 
+  // Detect whether there is paddle collision
   const ballWithinPaddleZone = y + dy > paddleCollisionY && y + dy < paddleCollisionY + paddleHeight;
-
   if (y + dy < ballRadius) {
     dy = Math.abs(dy);
   } else if (ballWithinPaddleZone) {
@@ -614,6 +616,7 @@ function draw(delta) {
     loseLife();
   }
 
+  // ball movement
   if (gameState === 'playing') {
     x += dx * (delta / 10.0);
     y += dy * (delta / 10.0);
