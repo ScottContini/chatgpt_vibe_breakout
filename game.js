@@ -150,9 +150,11 @@ function brickAt(r, c, pattern, rows, cols) {
 
 function generateBumpyRect(x, y, width, height) {
   const path = new Path2D();
-  const bumpiness = 4;  // increase for more dramatic curves
-  const segments = 7;   // number of segments per edge
+  const baseBumpiness = 3; 
+  const baseSegments = 8; 
 
+  let bumpiness = baseBumpiness * (1 + Math.random() - 0.5);  // how bumpy?
+  let segments = baseSegments * (1 + Math.random() - 0.5);   // number of segments per edge
   // Top edge
   let startX = x;
   let startY = y + Math.random() * bumpiness;
@@ -162,40 +164,46 @@ function generateBumpyRect(x, y, width, height) {
     const endY = y + Math.random() * bumpiness;
     const cpX = (startX + endX) / 2;
     const cpY = y - Math.random() * bumpiness;
-    path.quadraticCurveTo(cpX, cpY, endX, endY);
+    path.lineTo(cpX, cpY, endX, endY);
     startX = endX;
     startY = endY;
   }
 
+  bumpiness = baseBumpiness * (1 + Math.random() - 0.5);
+  segments = baseSegments * (1 + Math.random() - 0.5);
   // Right edge
   for (let i = 1; i <= segments; i++) {
     const endX = x + width + Math.random() * bumpiness;
     const endY = y + (i * height) / segments;
     const cpX = x + width + Math.random() * bumpiness;
     const cpY = (startY + endY) / 2;
-    path.quadraticCurveTo(cpX, cpY, endX, endY);
+    path.lineTo(cpX, cpY, endX, endY);
     startX = endX;
     startY = endY;
   }
 
+  bumpiness = baseBumpiness * (1 + Math.random() - 0.5);
+  segments = baseSegments * (1 + Math.random() - 0.5);
   // Bottom edge
   for (let i = 1; i <= segments; i++) {
     const endX = x + width - (i * width) / segments;
     const endY = y + height - Math.random() * bumpiness;
     const cpX = (startX + endX) / 2;
     const cpY = y + height + Math.random() * bumpiness;
-    path.quadraticCurveTo(cpX, cpY, endX, endY);
+    path.lineTo(cpX, cpY, endX, endY);
     startX = endX;
     startY = endY;
   }
 
+  bumpiness = baseBumpiness * (1 + Math.random() - 0.5);
+  segments = baseSegments * (1 + Math.random() - 0.5);
   // Left edge
   for (let i = 1; i <= segments; i++) {
     const endX = x - Math.random() * bumpiness;
     const endY = y + height - (i * height) / segments;
     const cpX = x - Math.random() * bumpiness;
     const cpY = (startY + endY) / 2;
-    path.quadraticCurveTo(cpX, cpY, endX, endY);
+    path.lineTo(cpX, cpY, endX, endY);
     startX = endX;
     startY = endY;
   }
