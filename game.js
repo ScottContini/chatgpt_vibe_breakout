@@ -191,9 +191,14 @@ function generateBumpyRect(x, y, width, height) {
 
 
 function initBricks() {
-  brickRowCount = 5;
-  brickColumnCount = 8;
-  bricks.length = 0;
+  if (level === 1) {
+    brickRowCount = 5;
+    brickColumnCount = 8;
+  }
+  else if (brickColumnCount < 16)
+    ++brickColumnCount;
+  else if (brickRowCount < 7)
+    ++brickRowCount;
 
   const baseBrickPadding = 10;
   const pattern = levelPatterns[(level - 1) % levelPatterns.length];
