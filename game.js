@@ -17,6 +17,16 @@ const BASE_HEIGHT = 360;
 const scaleX = canvas.width / BASE_WIDTH;
 const scaleY = canvas.height / BASE_HEIGHT;
 
+const levelHues = [
+  0,   // red
+  290, // purple
+  180, // aqua
+  60,  // yellow
+  30,  // orange
+  120, // green
+  210 // cool blue
+];
+
 
 let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 let brickBuffer = null;
@@ -89,7 +99,7 @@ let leftPressed = false;
 function generateBumpyRect(x, y, width, height) {
   const path = new Path2D();
   const bumpiness = 3; // pixel variation
-  const segments = 4; // number of segments per edge
+  const segments = 5; // number of segments per edge
 
   // Top edge
   path.moveTo(x, y + Math.random() * bumpiness);
@@ -130,7 +140,7 @@ function initBricks(rows = 5, cols = 7) {
   brickRowCount = rows;
   brickColumnCount = cols;
   bricksRemaining = 0;
-  const baseHue = (272 + level * 34) % 360;
+  const baseHue = levelHues[(level - 1) % levelHues.length];
 
   for (let c = 0; c < brickColumnCount; c++) {
     bricks[c] = [];
@@ -140,7 +150,7 @@ function initBricks(rows = 5, cols = 7) {
 
       const status = 1; // could randomize later
       if (status === 1) bricksRemaining++;
-      const hue = baseHue;  // we may choose to vary the hue based upon a variety of factors
+      const hue = baseHue;
 
       bricks[c][r] = {
         x: brickX,
@@ -174,7 +184,7 @@ function drawBricks() {
       const hue = b.hue;
       if (bricks[c][r].status === 1) {
 
-        const lightness = 75 - r * 7;
+        const lightness = 75 - r * 9;
         const overlayColor = `hsla(${hue}, 80%, ${lightness}%, 0.6)`;
 
         ctx.save();
@@ -664,9 +674,9 @@ function startNextLevel() {
   y = canvas.height - 120;
   paddleX = (canvas.width - paddleWidth) / 2;
 
+  level++;
   initBricks();
 
-  level++;
   startTime = Date.now();
   gameState = 'waiting';
 
