@@ -30,6 +30,13 @@ const levelHues = [
   30,  // orange
   60,  // yellow
 ];
+const levelPatterns = [
+  "full",
+  "gapBand",
+  "pyramid",
+  "skipRows",
+  "wave"
+];
 
 
 
@@ -93,6 +100,54 @@ let paddleX = (canvas.width - paddleWidth) / 2;
 let rightPressed = false;
 let leftPressed = false;
 
+
+
+function brickAt(r, c, pattern, rows, cols) {
+  switch (pattern) {
+    case "full":
+      return true;
+
+    case "checkerboard":
+      return (r + c) % 2 === 0;
+
+    case "pyramid":
+      return c >= r && c < cols - r;
+
+    case "hollow":
+      return r === 0 || r === rows - 1 || c === 0 || c === cols - 1;
+
+    case "centralBlock":
+      const margin = 2;
+      return (
+        r >= margin && r < rows - margin &&
+        c >= margin && c < cols - margin
+      );
+
+    case "diagonal":
+      return (r + c) % 3 === 0;
+
+    case "randomHoles":
+      return Math.random() > 0.3;
+
+    case "wave":
+      const center = Math.floor(rows / 2);
+      return Math.abs(r - Math.floor(Math.sin(c / 1.5) * 2 + center)) <= 1;
+
+    case "gapBand":
+      const bandSize = Math.floor(rows / 3);
+      const start = Math.floor((rows - bandSize) / 2);
+      return r < start || r >= start + bandSize;
+
+    case "skipRows":
+      return r % 2 === 0;
+
+    default:
+      return true;
+  }
+}
+
+
+
 // Make our bricks a bit bumpy
 function generateBumpyRect(x, y, width, height) {
   const path = new Path2D();
@@ -133,12 +188,17 @@ function generateBumpyRect(x, y, width, height) {
 }
 
 
+
+
 function initBricks() {
   brickRowCount = 5;
   brickColumnCount = 8;
   bricks.length = 0;
+
   const baseBrickPadding = 10;
+  const pattern = levelPatterns[(level - 1) % levelPatterns.length];
   const baseHue = levelHues[(level - 1) % levelHues.length];
+
   const brickPadding = baseBrickPadding * scaleX;
   const brickWidth = (canvas.width - (brickColumnCount - 1) * brickPadding - 2 * brickPadding) / brickColumnCount;
   const brickHeight = 20 * scaleY;
@@ -151,16 +211,18 @@ function initBricks() {
   for (let c = 0; c < brickColumnCount; c++) {
     bricks[c] = [];
     for (let r = 0; r < brickRowCount; r++) {
+      if (!brickAt(r, c, pattern, brickRowCount, brickColumnCount)) {
+        bricks[c][r] = { status: 0 };  // empty brick slot
+        continue;
+      }
+
       const brickX = c * (brickWidth + brickPadding) + brickOffsetLeft;
       const brickY = r * (brickHeight + brickPadding) + brickOffsetTop;
-
-      const status = 1;
-      if (status === 1) bricksRemaining++;
 
       bricks[c][r] = {
         x: brickX,
         y: brickY,
-        status,
+        status: 1,
         hitPoints: 1,
         type: "normal",
         hue: baseHue + (Math.random() * 8 - 4),
@@ -168,10 +230,11 @@ function initBricks() {
         brickHeight: brickHeight,
         shapePath: generateBumpyRect(brickX, brickY, brickWidth, brickHeight)
       };
+      bricksRemaining++;
     }
   }
 
-  // Make these accessible globally if needed later
+  // Expose for global access
   window.brickPadding = brickPadding;
   window.brickWidth = brickWidth;
   window.brickHeight = brickHeight;
