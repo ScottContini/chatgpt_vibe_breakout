@@ -153,7 +153,14 @@ function brickAt(r, c, pattern, rows, cols) {
 
 
 
-function generateBumpyRect(x, y, width, height) {
+function generateBrickShape(x, y, width, height) {
+  const path = new Path2D();
+  path.rect(x, y, width, height);
+  return path;
+}
+
+
+function generateMeteorShape(x, y, width, height) {
   const path = new Path2D();
   const minDim = Math.min(width, height);
   const baseBumpiness = Math.max(2, Math.min(4, minDim / 10));
@@ -214,7 +221,7 @@ function initBricks() {
   if (brickColumnCount < 16)
     ++brickColumnCount;
 
-  const baseHorizontalBrickPadding = 18;
+  const baseHorizontalBrickPadding = 6;
   const baseVerticalBrickPadding = 6;
   const pattern = levelPatterns[(level - 1) % levelPatterns.length];
   const baseHue = levelHues[(level - 1) % levelHues.length];
@@ -223,7 +230,7 @@ function initBricks() {
   const brickVerticalPadding = baseVerticalBrickPadding * scaleY;
   const brickWidth = (canvas.width - (brickColumnCount - 1) * brickHorizontalPadding - 2 * brickHorizontalPadding) / brickColumnCount;
   const brickHeight = 20 * scaleY;
-  const brickOffsetTop = 30 * scaleY;
+  const brickOffsetTop = 20 * scaleY;
   const totalBricksWidth = brickColumnCount * brickWidth + (brickColumnCount - 1) * brickHorizontalPadding;
   const brickOffsetLeft = (canvas.width - totalBricksWidth) / 2;
 
@@ -249,7 +256,7 @@ function initBricks() {
         hue: baseHue + (Math.random() * 8 - 4),
         brickWidth: brickWidth,
         brickHeight: brickHeight,
-        shapePath: generateBumpyRect(brickX, brickY, brickWidth, brickHeight)
+        shapePath: generateBrickShape(brickX, brickY, brickWidth, brickHeight)
       };
       bricksRemaining++;
     }
@@ -262,7 +269,6 @@ function initBricks() {
   window.brickOffsetTop = brickOffsetTop;
 
   bgImage.src = galaxyImages[currentGalaxyIndex];
-  bricksRemaining = 3; // xxxx
 
 }
 
