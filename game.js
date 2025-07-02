@@ -8,11 +8,21 @@ let currentGalaxyImage = galaxyImages[currentGalaxyIndex];
 let previousGalaxyImage = null;
 let backgroundAlpha = 1; // for fade transition
 let transitioning = false;
-
-
 brickTexture.onload = function () {
   brickPattern = ctx.createPattern(brickTexture, 'repeat');
 };
+
+
+const backgroundMusic = document.getElementById("backgroundMusic");
+
+function playBackgroundMusic() {
+  backgroundMusic.volume = 0.15; // adjust volume if needed
+  backgroundMusic.play().catch(err => {
+    // Some browsers block autoplay without interaction
+    console.log("Music play blocked until user interaction:", err);
+  });
+}
+
 
 
 
@@ -485,6 +495,9 @@ window.addEventListener('load', () => {
     intro.style.opacity = '1';
   }, 50); // slight delay so transition applies
 });
+// Start music on first user interaction (safe for autoplay restrictions)
+document.addEventListener("click", playBackgroundMusic, { once: true });
+document.addEventListener("touchstart", playBackgroundMusic, { once: true });
 
 canvas.addEventListener("touchstart", handleTouchMove, { passive: false });
 canvas.addEventListener("touchmove", handleTouchMove, { passive: false });
