@@ -10,33 +10,8 @@ let backgroundAlpha = 1; // for fade transition
 let transitioning = false;
 
 
-/*
-// ChatGPT gave me this but I am not clear if I need it:
-function loadGalaxyImage(src) {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => resolve(img);
-    img.src = src;
-  });
-}
-
-Promise.all([
-  loadGalaxyImage(galaxyImages[0]),
-  loadGalaxyImage(galaxyImages[1]),
-]).then((loadedImages) => {
-  galaxyImages = loadedImages;
-  currentGalaxyImage = galaxyImages[currentGalaxyIndex];
-  // Now safe to start game loop
-  requestAnimationFrame(draw);
-});
-*/
-
-
 brickTexture.onload = function () {
   brickPattern = ctx.createPattern(brickTexture, 'repeat');
-};
-rockTexture.onload = function () {
-  rockPattern = ctx.createPattern(rockTexture, 'repeat');
 };
 
 
@@ -304,7 +279,7 @@ function initBricks() {
 
 
 function drawBricks() {
-  const textureImg = document.getElementById("rockTexture");
+  const textureImg = document.getElementById("brickTexture");
 
   // Ensure texture is loaded
   if (!textureImg.complete) {
