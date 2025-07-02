@@ -4,6 +4,32 @@ const bgImage = new Image();
 
 const galaxyImages = ["galaxy1.png", "galaxy2.png"];
 let currentGalaxyIndex = 0;
+let currentGalaxyImage = galaxyImages[currentGalaxyIndex];
+let previousGalaxyImage = null;
+let backgroundAlpha = 1; // for fade transition
+let transitioning = false;
+
+
+/*
+// ChatGPT gave me this but I am not clear if I need it:
+function loadGalaxyImage(src) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.src = src;
+  });
+}
+
+Promise.all([
+  loadGalaxyImage(galaxyImages[0]),
+  loadGalaxyImage(galaxyImages[1]),
+]).then((loadedImages) => {
+  galaxyImages = loadedImages;
+  currentGalaxyImage = galaxyImages[currentGalaxyIndex];
+  // Now safe to start game loop
+  requestAnimationFrame(draw);
+});
+*/
 
 
 brickTexture.onload = function () {
@@ -273,7 +299,6 @@ function initBricks() {
   window.brickOffsetTop = brickOffsetTop;
 
   bgImage.src = galaxyImages[currentGalaxyIndex];
-
 }
 
 
@@ -431,7 +456,7 @@ function collisionDetection() {
           b.status = 0;
           createParticles(b);
           bricksRemaining--;
-          score = score + 5 - r;
+          score = score + brickRowCount - r;
           if (score > highScore) {
             if (highScore > 0 && !highScoreSoundPlayed) {
               highScoreSound.play();
@@ -695,6 +720,34 @@ function drawParticleTrails() {
 
 }
 
+
+// Make smooth transition between background images
+function transitionGalaxyImages() {
+  if (!currentGalaxyImage?.complete || !previousGalaxyImage?.complete) return;
+  if (transitioning && previousGalaxyImage) {
+    // Draw previous galaxy fading out
+    ctx.globalAlpha = 1 - backgroundAlpha;
+    ctx.drawImage(previousGalaxyImage, 0, 0, canvas.width, canvas.height);
+
+    // Draw current galaxy fading in
+    ctx.globalAlpha = backgroundAlpha;
+    ctx.drawImage(currentGalaxyImage, 0, 0, canvas.width, canvas.height);
+
+    ctx.globalAlpha = 1;
+
+    backgroundAlpha += 0.02; // adjust for speed of fade
+
+    if (backgroundAlpha >= 1) {
+      transitioning = false;
+      previousGalaxyImage = null;
+    }
+  } else {
+    ctx.drawImage(currentGalaxyImage, 0, 0, canvas.width, canvas.height);
+  }
+
+}
+
+
 function draw(delta) {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
@@ -756,6 +809,8 @@ function draw(delta) {
   }
 
   gameMessaging();
+  if (transitioning && previousGalaxyImage)
+    transitionGalaxyImages();
 }
 
 
@@ -783,9 +838,11 @@ function drawScore() {
 
 
 function startNextLevel() {
-  // Increase ball speed slightly
-  dx *= 1.1;
-  dy *= 1.1;
+  // Increase ball speed slightly, up to a limit
+  if (Math.abs(dx) < 50)
+    dx *= 1.1;
+  if (Math.abs(dy) < 50)
+    dy *= 1.1;
   // always make the ball go upward at the start so player has a chance
   if (dy > 0)
     dy = -dy
@@ -804,9 +861,13 @@ function startNextLevel() {
   messageText = `Level ${level}`;
   messageTimer = 120;
 
-  if ((level % levelPatterns.length) === 0)
-    // Advance to next galaxy image (wraparound)
+  if ((level % levelPatterns.length) === 0) {
+    previousGalaxyImage = currentGalaxyImage;
     currentGalaxyIndex = (currentGalaxyIndex + 1) % galaxyImages.length;
+    currentGalaxyImage = galaxyImages[currentGalaxyIndex];
+    backgroundAlpha = 0;
+    transitioning = true;
+  }
 
 }
 
