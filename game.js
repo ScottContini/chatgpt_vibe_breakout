@@ -54,6 +54,8 @@ const paddleSound = document.getElementById("paddleSound");
 const loseSound = document.getElementById("loseSound");
 const winSound = document.getElementById("winSound");
 const failSound = document.getElementById("failSound");
+const highScoreSound = document.getElementById("highScoreSound");
+const hundredSound = document.getElementById("hundredSound"); // score reached a multiple of 100
 
 fetch("sounds/brick.wav")
   .then(response => response.arrayBuffer())
@@ -88,6 +90,8 @@ let lives = 3;
 // Game state
 let score = 0;
 let highScore = localStorage.getItem("breakoutHighScore") || 0;
+let scoreDiv100 = 0;
+let highScoreSoundPlayed = false;
 let startTime = Date.now();
 let soundEnabled = false;
 let gameState = 'playing'; // 'playing', 'waiting', 'paused'
@@ -429,8 +433,18 @@ function collisionDetection() {
           bricksRemaining--;
           score = score + 5 - r;
           if (score > highScore) {
+            if (highScore > 0 && !highScoreSoundPlayed) {
+              highScoreSound.play();
+              highScoreSoundPlayed = true;
+            }
             highScore = score;
             localStorage.setItem("breakoutHighScore", highScore);
+          }
+          if (Math.trunc(score/100) > scoreDiv100) {
+            // new multiple of 100 was reached, let player know
+            scoreDiv100 = Math.trunc(score/100);
+            hundredSound.currentTime = 0;
+            hundredSound.play();
           }
           if (bricksRemaining === 0) {
             if (soundEnabled) {
@@ -809,8 +823,11 @@ function resetGame() {
   gameState = 'waiting';
   startTime = Date.now();
   score = 0;
+  scoreDiv100 = 0;
   level = 1;
   lives = 3;
+  highScoreSoundPlayed = false;
+  currentGalaxyIndex = 0;
 
   initBricks();
 }
