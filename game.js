@@ -1,11 +1,16 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 const bgImage = new Image();
-bgImage.src = "galaxy.png";
+
+const galaxyImages = ["galaxy1.png", "galaxy2.png"];
+let currentGalaxyIndex = 0;
 
 
 brickTexture.onload = function () {
   brickPattern = ctx.createPattern(brickTexture, 'repeat');
+};
+rockTexture.onload = function () {
+  rockPattern = ctx.createPattern(rockTexture, 'repeat');
 };
 
 
@@ -148,19 +153,30 @@ function brickAt(r, c, pattern, rows, cols) {
 
 
 
-function generateBumpyRect(x, y, width, height) {
+function generateBrickShape(x, y, width, height) {
   const path = new Path2D();
-  const baseBumpiness = 3;
-  const baseSegments = 4;
+  path.rect(x, y, width, height);
+  return path;
+}
 
-  let bumpiness = baseBumpiness * (1 + Math.random() - 0.5);  // how bumpy?
-  let segments = baseSegments * (1 + Math.random() - 0.5);   // number of segments per edge
+
+function generateMeteorShape(x, y, width, height) {
+  const path = new Path2D();
+  const minDim = Math.min(width, height);
+  const baseBumpiness = Math.max(2, Math.min(4, minDim / 10));
+  const baseSegments = Math.round(Math.max(3, Math.min(6, minDim / 12)));
+  const arcInset = 4; // inward offset for arc edges
+  const arcRadius = height / 2.7;
+
+  let bumpiness = baseBumpiness * (1 + Math.random() - 0.5);
+  let segments = baseSegments * (1 + Math.random() - 0.5);
+
   // Top edge
-  let startX = x;
+  let startX = x + arcInset;
   let startY = y + Math.random() * bumpiness;
   path.moveTo(startX, startY);
   for (let i = 1; i <= segments; i++) {
-    const endX = x + (i * width) / segments;
+    const endX = x + arcInset + (i * (width - 2 * arcInset)) / segments;
     const endY = y + Math.random() * bumpiness;
     const cpX = (startX + endX) / 2;
     const cpY = y - Math.random() * bumpiness;
@@ -169,15 +185,15 @@ function generateBumpyRect(x, y, width, height) {
     startY = endY;
   }
 
-  // right edge
-  const arcRadius = height / 2.7;
-  path.arc(x + width + 2, y + height / 2, arcRadius, -Math.PI / 2, Math.PI / 2, false);
+  // Right edge arc (inset inward)
+  path.arc(x + width - arcInset, y + height / 2, arcRadius, -Math.PI / 2, Math.PI / 2, false);
 
   bumpiness = baseBumpiness * (1 + Math.random() - 0.5);
   segments = baseSegments * (1 + Math.random() - 0.5);
+
   // Bottom edge
   for (let i = 1; i <= segments; i++) {
-    const endX = x + width - (i * width) / segments;
+    const endX = x + width - arcInset - (i * (width - 2 * arcInset)) / segments;
     const endY = y + height - Math.random() * bumpiness;
     const cpX = (startX + endX) / 2;
     const cpY = y + height + Math.random() * bumpiness;
@@ -186,13 +202,12 @@ function generateBumpyRect(x, y, width, height) {
     startY = endY;
   }
 
-  // left edge
-  path.arc(x - 2, y + height / 2, arcRadius, Math.PI / 2, -Math.PI / 2, false);
+  // Left edge arc (inset inward)
+  path.arc(x + arcInset, y + height / 2, arcRadius, Math.PI / 2, -Math.PI / 2, false);
 
   path.closePath();
   return path;
 }
-
 
 
 
@@ -201,21 +216,21 @@ function initBricks() {
     brickRowCount = 5;
     brickColumnCount = 8;
   }
-  else if (brickColumnCount < 16)
-    ++brickColumnCount;
-  else if (brickRowCount < 7)
+  else if (brickRowCount < 8)
     ++brickRowCount;
+  if (brickColumnCount < 16)
+    ++brickColumnCount;
 
-  const baseHorizontalBrickPadding = 18;
-  const baseVerticalBrickPadding = 10;
+  const baseHorizontalBrickPadding = 6;
+  const baseVerticalBrickPadding = 6;
   const pattern = levelPatterns[(level - 1) % levelPatterns.length];
   const baseHue = levelHues[(level - 1) % levelHues.length];
 
   const brickHorizontalPadding = baseHorizontalBrickPadding * scaleX;
   const brickVerticalPadding = baseVerticalBrickPadding * scaleY;
   const brickWidth = (canvas.width - (brickColumnCount - 1) * brickHorizontalPadding - 2 * brickHorizontalPadding) / brickColumnCount;
-  const brickHeight = 20 * scaleY;
-  const brickOffsetTop = 30 * scaleY;
+  const brickHeight = 16 * scaleY;
+  const brickOffsetTop = 20 * scaleY;
   const totalBricksWidth = brickColumnCount * brickWidth + (brickColumnCount - 1) * brickHorizontalPadding;
   const brickOffsetLeft = (canvas.width - totalBricksWidth) / 2;
 
@@ -241,7 +256,7 @@ function initBricks() {
         hue: baseHue + (Math.random() * 8 - 4),
         brickWidth: brickWidth,
         brickHeight: brickHeight,
-        shapePath: generateBumpyRect(brickX, brickY, brickWidth, brickHeight)
+        shapePath: generateBrickShape(brickX, brickY, brickWidth, brickHeight)
       };
       bricksRemaining++;
     }
@@ -252,12 +267,15 @@ function initBricks() {
   window.brickHeight = brickHeight;
   window.brickOffsetLeft = brickOffsetLeft;
   window.brickOffsetTop = brickOffsetTop;
+
+  bgImage.src = galaxyImages[currentGalaxyIndex];
+
 }
 
 
 
 function drawBricks() {
-  const textureImg = document.getElementById("brickTexture");
+  const textureImg = document.getElementById("rockTexture");
 
   // Ensure texture is loaded
   if (!textureImg.complete) {
@@ -273,7 +291,7 @@ function drawBricks() {
       const hue = b.hue;
       if (bricks[c][r].status === 1) {
 
-        const lightness = 75 - r * 9;
+        const lightness = 85 - r * 9;
         const overlayColor = `hsla(${hue}, 80%, ${lightness}%, 0.6)`;
 
         ctx.save();
@@ -771,6 +789,10 @@ function startNextLevel() {
 
   messageText = `Level ${level}`;
   messageTimer = 120;
+
+  if ((level % levelPatterns.length) === 0)
+    // Advance to next galaxy image (wraparound)
+    currentGalaxyIndex = (currentGalaxyIndex + 1) % galaxyImages.length;
 
 }
 
