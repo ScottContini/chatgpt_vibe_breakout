@@ -15,6 +15,46 @@ brickTexture.onload = function () {
 
 const backgroundMusic = document.getElementById("backgroundMusic");
 
+function fadeOutMusic(audioElement, duration = 2000) {
+  const startVolume = audioElement.volume;
+  const fadeSteps = 30;
+  const fadeStepTime = duration / fadeSteps;
+  let currentStep = 0;
+
+  const fadeInterval = setInterval(() => {
+    currentStep++;
+    const newVolume = startVolume * (1 - currentStep / fadeSteps);
+    audioElement.volume = Math.max(0, newVolume);
+
+    if (currentStep >= fadeSteps) {
+      clearInterval(fadeInterval);
+      audioElement.pause();
+      audioElement.currentTime = 0; // optional: rewind to start
+    }
+  }, fadeStepTime);
+}
+
+
+function fadeInMusic(audioElement, targetVolume = 1, duration = 2000) {
+  audioElement.volume = 0;
+  audioElement.play();
+
+  const fadeSteps = 30;
+  const fadeStepTime = duration / fadeSteps;
+  let currentStep = 0;
+
+  const fadeInterval = setInterval(() => {
+    currentStep++;
+    const newVolume = targetVolume * (currentStep / fadeSteps);
+    audioElement.volume = Math.min(targetVolume, newVolume);
+
+    if (currentStep >= fadeSteps) {
+      clearInterval(fadeInterval);
+    }
+  }, fadeStepTime);
+}
+
+
 function playBackgroundMusic() {
   backgroundMusic.volume = 0.15; // adjust volume if needed
   backgroundMusic.play().catch(err => {
@@ -22,6 +62,18 @@ function playBackgroundMusic() {
     console.log("Music play blocked until user interaction:", err);
   });
 }
+
+function playBackgroundMusic() {
+  backgroundMusic.volume = 0.5; // adjust volume if needed
+  backgroundMusic.play().catch(err => {
+    // Some browsers block autoplay without interaction
+    console.log("Music play blocked until user interaction:", err);
+  });
+}
+
+// Start music on first user interaction (safe for autoplay restrictions)
+document.addEventListener("click", playBackgroundMusic, { once: true });
+document.addEventListener("touchstart", playBackgroundMusic, { once: true });
 
 
 
@@ -652,6 +704,7 @@ function loseLife() {
         loseSound.currentTime = 0;
         loseSound.play();
       }
+      fadeOutMusic(backgroundMusic, 2000);
       messageText = "Game Over";
       messageTimer = 9999;
       gameState = 'gameover';
@@ -861,6 +914,7 @@ function startNextLevel() {
 
 
 function resetGame() {
+  fadeInMusic(backgroundMusic, 1, 2000);
   messageText = "";
   messageTimer = 0;
 
