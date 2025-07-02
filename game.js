@@ -216,7 +216,7 @@ function initBricks() {
     brickRowCount = 5;
     brickColumnCount = 8;
   }
-  else if (brickRowCount < 7)
+  else if (brickRowCount < 8)
     ++brickRowCount;
   if (brickColumnCount < 16)
     ++brickColumnCount;
@@ -229,7 +229,7 @@ function initBricks() {
   const brickHorizontalPadding = baseHorizontalBrickPadding * scaleX;
   const brickVerticalPadding = baseVerticalBrickPadding * scaleY;
   const brickWidth = (canvas.width - (brickColumnCount - 1) * brickHorizontalPadding - 2 * brickHorizontalPadding) / brickColumnCount;
-  const brickHeight = 20 * scaleY;
+  const brickHeight = 16 * scaleY;
   const brickOffsetTop = 20 * scaleY;
   const totalBricksWidth = brickColumnCount * brickWidth + (brickColumnCount - 1) * brickHorizontalPadding;
   const brickOffsetLeft = (canvas.width - totalBricksWidth) / 2;
