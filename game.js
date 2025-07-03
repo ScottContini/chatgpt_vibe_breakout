@@ -498,6 +498,7 @@ function collisionDetection() {
           score = score + brickRowCount - r;
           if (score > highScore) {
             if (highScore > 0 && !highScoreSoundPlayed) {
+              highScoreSound.currentTime = 0;
               highScoreSound.play();
               highScoreSoundPlayed = true;
             }
