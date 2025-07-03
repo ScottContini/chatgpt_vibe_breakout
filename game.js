@@ -119,6 +119,7 @@ const winSound = document.getElementById("winSound");
 const failSound = document.getElementById("failSound");
 const highScoreSound = document.getElementById("highScoreSound");
 const hundredSound = document.getElementById("hundredSound"); // score reached a multiple of 100
+const extraLifeSound = document.getElementById("extraLifeSound");
 
 fetch("sounds/brick.wav")
   .then(response => response.arrayBuffer())
@@ -153,7 +154,8 @@ let lives = 3;
 // Game state
 let score = 0;
 let highScore = localStorage.getItem("breakoutHighScore") || 0;
-let scoreDiv100 = 0;
+let scoreDiv100 = 0;  // notify user they have hit a new multiple of 100
+let scoreDiv1000 = 0; // for extra lives!
 let highScoreSoundPlayed = false;
 let startTime = Date.now();
 let soundEnabled = false;
@@ -507,6 +509,12 @@ function collisionDetection() {
             scoreDiv100 = Math.trunc(score/100);
             hundredSound.currentTime = 0;
             hundredSound.play();
+          }
+          if (Math.trunc(score/1000) > scoreDiv1000) {
+            scoreDiv1000 = Math.trunc(score/1000);
+            extraLifeSound.currentTime = 0;
+            extraLifeSound.play();
+            lives++;
           }
           if (bricksRemaining === 0) {
             if (soundEnabled) {
@@ -927,6 +935,7 @@ function resetGame() {
   startTime = Date.now();
   score = 0;
   scoreDiv100 = 0;
+  scoreDiv1000 = 0;
   level = 1;
   lives = 3;
   highScoreSoundPlayed = false;
