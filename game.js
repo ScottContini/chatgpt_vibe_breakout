@@ -120,6 +120,8 @@ const failSound = document.getElementById("failSound");
 const highScoreSound = document.getElementById("highScoreSound");
 const hundredSound = document.getElementById("hundredSound"); // score reached a multiple of 100
 const extraLifeSound = document.getElementById("extraLifeSound");
+const dingSound = document.getElementById("dingSound");
+const popSound = document.getElementById("popSound");
 
 fetch("sounds/brick.wav")
   .then(response => response.arrayBuffer())
@@ -483,6 +485,22 @@ function updateMovingBricks() {
                 // Move it slightly away to prevent sticking
                 b.x += b.dx;
                 b.y += b.dy;
+
+                // Optional jitter factor to make motion feel more natural
+                const jitterFactor = 0.50;
+                const maxSpeed = 1.5;
+
+                b.dx += b.dx * (Math.random() * jitterFactor * 2 - jitterFactor);
+                b.dy += b.dy * (Math.random() * jitterFactor * 2 - jitterFactor);
+
+                // Clamp speed to avoid runaway motion
+                const speed = Math.hypot(b.dx, b.dy);
+                if (speed > maxSpeed) {
+                  const scale = maxSpeed / speed;
+                  b.dx *= scale;
+                  b.dy *= scale;
+                }
+
               }
             } // AABB collision check
           }  // for (let r2 = 0; r2 < brickRowCount; r2++)
@@ -568,7 +586,13 @@ function collisionDetection() {
           y < b.y + b.brickHeight
         ) {
           if (soundEnabled) {
-            playBrickSoundWithPitch(r);
+            if (b.moving === false)
+              playBrickSoundWithPitch(r);
+            else {
+              // moving brick gets a pop sound
+              popSound.currentTime = 0;
+              popSound.play();
+            }
           }
           dy = -dy;
           b.status = 0;
