@@ -55,16 +55,9 @@ function fadeInMusic(audioElement, targetVolume = 1, duration = 2000) {
 }
 
 
-function playBackgroundMusic() {
-  backgroundMusic.volume = 0.15; // adjust volume if needed
-  backgroundMusic.play().catch(err => {
-    // Some browsers block autoplay without interaction
-    console.log("Music play blocked until user interaction:", err);
-  });
-}
 
 function playBackgroundMusic() {
-  backgroundMusic.volume = 0.5; // adjust volume if needed
+  backgroundMusic.volume = 0.15; // adjust volume if needed
   backgroundMusic.play().catch(err => {
     // Some browsers block autoplay without interaction
     console.log("Music play blocked until user interaction:", err);
@@ -84,6 +77,11 @@ const BASE_WIDTH = 480;
 const BASE_HEIGHT = 360;
 const scaleX = canvas.width / BASE_WIDTH;
 const scaleY = canvas.height / BASE_HEIGHT;
+const baseHorizontalBrickPadding = 6;
+const baseVerticalBrickPadding = 6;
+const brickHorizontalPadding = baseHorizontalBrickPadding * scaleX;
+const brickVerticalPadding = baseVerticalBrickPadding * scaleY;
+const brickOffsetTop = 20 * scaleY;
 
 const levelHues = [
   275, // Cosmic Purple
@@ -110,6 +108,8 @@ const levelPatterns = [
 
 let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 let brickBuffer = null;
+let percentageMovingBricks = 5;
+const maxPercentageMovingBricks = 30;
 
 
 // Sounds
@@ -120,6 +120,8 @@ const failSound = document.getElementById("failSound");
 const highScoreSound = document.getElementById("highScoreSound");
 const hundredSound = document.getElementById("hundredSound"); // score reached a multiple of 100
 const extraLifeSound = document.getElementById("extraLifeSound");
+const dingSound = document.getElementById("dingSound");
+const popSound = document.getElementById("popSound");
 
 fetch("sounds/brick.wav")
   .then(response => response.arrayBuffer())
@@ -290,16 +292,11 @@ function initBricks() {
   if (brickColumnCount < 16)
     ++brickColumnCount;
 
-  const baseHorizontalBrickPadding = 6;
-  const baseVerticalBrickPadding = 6;
   const pattern = levelPatterns[(level - 1) % levelPatterns.length];
   const baseHue = levelHues[(level - 1) % levelHues.length];
 
-  const brickHorizontalPadding = baseHorizontalBrickPadding * scaleX;
-  const brickVerticalPadding = baseVerticalBrickPadding * scaleY;
   const brickWidth = (canvas.width - (brickColumnCount - 1) * brickHorizontalPadding - 2 * brickHorizontalPadding) / brickColumnCount;
   const brickHeight = 16 * scaleY;
-  const brickOffsetTop = 20 * scaleY;
   const totalBricksWidth = brickColumnCount * brickWidth + (brickColumnCount - 1) * brickHorizontalPadding;
   const brickOffsetLeft = (canvas.width - totalBricksWidth) / 2;
 
@@ -320,13 +317,25 @@ function initBricks() {
         x: brickX,
         y: brickY,
         status: 1,
-        hitPoints: 1,
+        hitPoints: brickRowCount - r,
         type: "normal",
         hue: baseHue + (Math.random() * 8 - 4),
         brickWidth: brickWidth,
         brickHeight: brickHeight,
-        shapePath: generateBrickShape(brickX, brickY, brickWidth, brickHeight)
+        shapePath: generateBrickShape(brickX, brickY, brickWidth, brickHeight),
+        moving: false,
+        dx: 0,
+        dy: 0
       };
+
+      if (Math.random() < percentageMovingBricks/100.0) {
+        // 5% chance to move if advanced level
+        bricks[c][r].moving = true;
+        bricks.hitPoints = bricks.hitPoints * 2;  // moving bricks are worth double points
+        bricks[c][r].dx = (Math.random() - 0.5) * 1.5;  // small random x-speed
+        bricks[c][r].dy = (Math.random() - 0.5) * 1.5;  // small random y-speed
+      }
+
       bricksRemaining++;
     }
   }
@@ -335,7 +344,6 @@ function initBricks() {
   window.brickWidth = brickWidth;
   window.brickHeight = brickHeight;
   window.brickOffsetLeft = brickOffsetLeft;
-  window.brickOffsetTop = brickOffsetTop;
 
   bgImage.src = galaxyImages[currentGalaxyIndex];
 }
@@ -418,6 +426,95 @@ function createParticles(brick) {
 
 
 
+function updateMovingBricks() {
+  const lowerLimit = (brickRowCount + 1) * (brickHeight + brickVerticalPadding) + brickOffsetTop;
+  for (let c = 0; c < brickColumnCount; c++) {
+    for (let r = 0; r < brickRowCount; r++) {
+      const b = bricks[c][r];
+      if (b.moving && b.status === 1) {
+        // Move
+        b.x += b.dx;
+        b.y += b.dy;
+
+        // Bounce off walls
+        if (b.x < 0 || b.x + b.brickWidth > canvas.width) {
+          b.dx = -b.dx;
+        }
+        if (b.y < brickOffsetTop || b.y + b.brickHeight > lowerLimit) {
+          b.dy = -b.dy;
+        }
+
+        // Update shape
+        b.shapePath = generateBrickShape(b.x, b.y, b.brickWidth, b.brickHeight);
+        // Check collision with other bricks
+        for (let c2 = 0; c2 < brickColumnCount; c2++) {
+          for (let r2 = 0; r2 < brickRowCount; r2++) {
+            const other = bricks[c2][r2];
+            if (other === b || other.status !== 1) continue;
+
+          // AABB collision check
+            if (
+              b.x < other.x + other.brickWidth &&
+              b.x + b.brickWidth > other.x &&
+              b.y < other.y + other.brickHeight &&
+              b.y + b.brickHeight > other.y
+            ) {
+              // Compute center positions
+              const ax = b.x + b.brickWidth / 2;
+              const ay = b.y + b.brickHeight / 2;
+              const bx = other.x + other.brickWidth / 2;
+              const by = other.y + other.brickHeight / 2;
+
+              const dx = ax - bx;
+              const dy = ay - by;
+
+              const combinedHalfWidths = (b.brickWidth + other.brickWidth) / 2;
+              const combinedHalfHeights = (b.brickHeight + other.brickHeight) / 2;
+
+              // Choose bounce axis based on greater overlap
+              if (Math.abs(dx) < combinedHalfWidths && Math.abs(dy) < combinedHalfHeights) {
+                const overlapX = combinedHalfWidths - Math.abs(dx);
+                const overlapY = combinedHalfHeights - Math.abs(dy);
+
+                if (overlapX < overlapY) {
+                  b.dx = -b.dx; // horizontal bounce
+                } else {
+                  b.dy = -b.dy; // vertical bounce
+                }
+
+                // Move it slightly away to prevent sticking
+                b.x += b.dx;
+                b.y += b.dy;
+
+                // Optional jitter factor to make motion feel more natural
+                const jitterFactor = 0.50;
+                const maxSpeed = 1.5;
+
+                b.dx += b.dx * (Math.random() * jitterFactor * 2 - jitterFactor);
+                b.dy += b.dy * (Math.random() * jitterFactor * 2 - jitterFactor);
+
+                // Clamp speed to avoid runaway motion
+                const speed = Math.hypot(b.dx, b.dy);
+                if (speed > maxSpeed) {
+                  const scale = maxSpeed / speed;
+                  b.dx *= scale;
+                  b.dy *= scale;
+                }
+
+              }
+            } // AABB collision check
+          }  // for (let r2 = 0; r2 < brickRowCount; r2++)
+        } // for (let c2 = 0; c2 < brickColumnCount; c2++)
+
+        // Update shape path to reflect new position
+        b.shapePath = generateBrickShape(b.x, b.y, b.brickWidth, b.brickHeight);
+      }
+    }
+  }
+}
+
+
+
 function updateParticles() {
   for (let i = particles.length - 1; i >= 0; i--) {
     const p = particles[i];
@@ -489,13 +586,19 @@ function collisionDetection() {
           y < b.y + b.brickHeight
         ) {
           if (soundEnabled) {
-            playBrickSoundWithPitch(r);
+            if (b.moving === false)
+              playBrickSoundWithPitch(r);
+            else {
+              // moving brick gets a pop sound
+              popSound.currentTime = 0;
+              popSound.play();
+            }
           }
           dy = -dy;
           b.status = 0;
           createParticles(b);
           bricksRemaining--;
-          score = score + brickRowCount - r;
+          score = score + b.hitPoints;
           if (score > highScore) {
             if (highScore > 0 && !highScoreSoundPlayed) {
               highScoreSound.currentTime = 0;
@@ -805,6 +908,7 @@ function draw(delta) {
   drawPaddle();
   drawBricks();
   updateParticles();
+  updateMovingBricks();
   drawParticles();
   drawScore();
   drawParticleTrails();
@@ -896,6 +1000,11 @@ function startNextLevel() {
   // always make the ball go upward at the start so player has a chance
   if (dy > 0)
     dy = -dy
+
+  // increase percentage of moving bricks
+  percentageMovingBricks = percentageMovingBricks + 3;
+  if (percentageMovingBricks > maxPercentageMovingBricks)
+    percentageMovingBrick = maxPercentageMovingBricks;
 
   // Reset ball and paddle
   x = canvas.width * (0.4 + Math.random() * 0.2);
