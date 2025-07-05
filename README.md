@@ -9,4 +9,5 @@ ChatGPT did most of it but I really had to help it in certain places.
 Use arrow keys or mouse to move the paddle, or swipe paddle on a mobile device.
 
 
+![Image of Breakout](https://github.com/ScottContini/chatgpt_vibe_breakout/blob/main/BreakoutSample.gif)
 
