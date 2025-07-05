@@ -426,89 +426,117 @@ function createParticles(brick) {
 
 
 
+
 function updateMovingBricks() {
-  const lowerLimit = (brickRowCount + 1) * (brickHeight + brickVerticalPadding) + brickOffsetTop;
+  const lowerLimit =
+    (brickRowCount + 1) * (brickHeight + brickVerticalPadding) +
+    brickOffsetTop;
+
+  const jitterFactor = 0.50;   // how strong the random velocity tweak is
+  const maxSpeed     = 1.5;    // clamp overall speed
+  const minComponent = 0.3;    // minimum |dx| or |dy|
+
   for (let c = 0; c < brickColumnCount; c++) {
     for (let r = 0; r < brickRowCount; r++) {
       const b = bricks[c][r];
-      if (b.moving && b.status === 1) {
-        // Move
-        b.x += b.dx;
-        b.y += b.dy;
+      if (!b || b.status !== 1 || !b.moving) continue;
 
-        // Bounce off walls
-        if (b.x < 0 || b.x + b.brickWidth > canvas.width) {
-          b.dx = -b.dx;
-        }
-        if (b.y < brickOffsetTop || b.y + b.brickHeight > lowerLimit) {
-          b.dy = -b.dy;
-        }
+      // 1) Move by current velocity
+      b.x += b.dx;
+      b.y += b.dy;
 
-        // Update shape
-        b.shapePath = generateBrickShape(b.x, b.y, b.brickWidth, b.brickHeight);
-        // Check collision with other bricks
-        for (let c2 = 0; c2 < brickColumnCount; c2++) {
-          for (let r2 = 0; r2 < brickRowCount; r2++) {
-            const other = bricks[c2][r2];
-            if (other === b || other.status !== 1) continue;
-
-          // AABB collision check
-            if (
-              b.x < other.x + other.brickWidth &&
-              b.x + b.brickWidth > other.x &&
-              b.y < other.y + other.brickHeight &&
-              b.y + b.brickHeight > other.y
-            ) {
-              // Compute center positions
-              const ax = b.x + b.brickWidth / 2;
-              const ay = b.y + b.brickHeight / 2;
-              const bx = other.x + other.brickWidth / 2;
-              const by = other.y + other.brickHeight / 2;
-
-              const dx = ax - bx;
-              const dy = ay - by;
-
-              const combinedHalfWidths = (b.brickWidth + other.brickWidth) / 2;
-              const combinedHalfHeights = (b.brickHeight + other.brickHeight) / 2;
-
-              // Choose bounce axis based on greater overlap
-              if (Math.abs(dx) < combinedHalfWidths && Math.abs(dy) < combinedHalfHeights) {
-                const overlapX = combinedHalfWidths - Math.abs(dx);
-                const overlapY = combinedHalfHeights - Math.abs(dy);
-
-                if (overlapX < overlapY) {
-                  b.dx = -b.dx; // horizontal bounce
-                } else {
-                  b.dy = -b.dy; // vertical bounce
-                }
-
-                // Move it slightly away to prevent sticking
-                b.x += b.dx;
-                b.y += b.dy;
-
-                // Optional jitter factor to make motion feel more natural
-                const jitterFactor = 0.50;
-                const maxSpeed = 1.5;
-
-                b.dx += b.dx * (Math.random() * jitterFactor * 2 - jitterFactor);
-                b.dy += b.dy * (Math.random() * jitterFactor * 2 - jitterFactor);
-
-                // Clamp speed to avoid runaway motion
-                const speed = Math.hypot(b.dx, b.dy);
-                if (speed > maxSpeed) {
-                  const scale = maxSpeed / speed;
-                  b.dx *= scale;
-                  b.dy *= scale;
-                }
-
-              }
-            } // AABB collision check
-          }  // for (let r2 = 0; r2 < brickRowCount; r2++)
-        } // for (let c2 = 0; c2 < brickColumnCount; c2++)
-
-        // Update shape path to reflect new position
-        b.shapePath = generateBrickShape(b.x, b.y, b.brickWidth, b.brickHeight);
+      // 2) Bounce off vertical walls
+      if (b.x < 0 || b.x + b.brickWidth > canvas.width) {
+        b.dx = -b.dx;
+        b.x = Math.max(0, Math.min(b.x, canvas.width  - b.brickWidth));
       }
+      // 3) Bounce off top / lower limit
+      if (b.y < brickOffsetTop || b.y + b.brickHeight > lowerLimit) {
+        b.dy = -b.dy;
+        b.y = Math.max(brickOffsetTop,
+                       Math.min(b.y, lowerLimit - b.brickHeight));
+      }
+
+      // 4) Update shape before collision detection
+      b.shapePath = generateBrickShape(
+        b.x, b.y,
+        b.brickWidth, b.brickHeight
+      );
+
+      // 5) Brick–brick collision check & bounce
+      for (let c2 = 0; c2 < brickColumnCount; c2++) {
+        for (let r2 = 0; r2 < brickRowCount; r2++) {
+          const other = bricks[c2][r2];
+          if (!other || other === b || other.status !== 1) continue;
+
+          // AABB overlap?
+          if (
+            b.x < other.x + other.brickWidth &&
+            b.x + b.brickWidth > other.x &&
+            b.y < other.y + other.brickHeight &&
+            b.y + b.brickHeight > other.y
+          ) {
+            // compute center distances
+            const ax = b.x + b.brickWidth / 2;
+            const ay = b.y + b.brickHeight / 2;
+            const bx = other.x + other.brickWidth / 2;
+            const by = other.y + other.brickHeight / 2;
+
+            const dx = ax - bx;
+            const dy = ay - by;
+            const halfW = (b.brickWidth + other.brickWidth) / 2;
+            const halfH = (b.brickHeight + other.brickHeight) / 2;
+
+            // decide bounce axis by smaller overlap
+            const overlapX = halfW - Math.abs(dx);
+            const overlapY = halfH - Math.abs(dy);
+
+            if (overlapX < overlapY) {
+              // horizontal bounce
+              b.dx = -b.dx;
+            } else {
+              // vertical bounce
+              b.dy = -b.dy;
+            }
+
+            // step away to avoid sticking
+            b.x += b.dx;
+            b.y += b.dy;
+
+            // update shape path again
+            b.shapePath = generateBrickShape(
+              b.x, b.y,
+              b.brickWidth, b.brickHeight
+            );
+
+            // apply jitter tweak
+            b.dx += b.dx * (Math.random() * jitterFactor * 2 - jitterFactor);
+            b.dy += b.dy * (Math.random() * jitterFactor * 2 - jitterFactor);
+
+            // clamp overall speed
+            const speed = Math.hypot(b.dx, b.dy);
+            if (speed > maxSpeed) {
+              const scale = maxSpeed / speed;
+              b.dx *= scale;
+              b.dy *= scale;
+            }
+          }
+        }
+      }
+
+      // 6) Enforce minimum per‐axis speed so bricks never move almost purely vertically/horizontally
+      if (Math.abs(b.dx) < minComponent) {
+        b.dx = (Math.random() < 0.5 ? 1 : -1) * minComponent;
+      }
+      if (Math.abs(b.dy) < minComponent) {
+        b.dy = (Math.random() < 0.5 ? 1 : -1) * minComponent;
+      }
+
+      // 7) Final shape update (in case dx/dy changes need repositioning)
+      b.shapePath = generateBrickShape(
+        b.x, b.y,
+        b.brickWidth, b.brickHeight
+      );
     }
   }
 }
