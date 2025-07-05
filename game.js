@@ -108,7 +108,8 @@ const levelPatterns = [
 
 let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 let brickBuffer = null;
-let percentageMovingBricks = 5;
+const initPercentageMovingBricks = 5;
+let percentageMovingBricks = initPercentageMovingBricks;
 const maxPercentageMovingBricks = 30;
 
 
@@ -1078,6 +1079,7 @@ function resetGame() {
   lives = 3;
   highScoreSoundPlayed = false;
   currentGalaxyIndex = 0;
+  percentageMovingBricks = initPercentageMovingBricks;
 
   initBricks();
 }
