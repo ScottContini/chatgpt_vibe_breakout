@@ -294,7 +294,7 @@ function initBricks() {
     ++brickColumnCount;
 
   const pattern = levelPatterns[(level - 1) % levelPatterns.length];
-  const baseHue = levelHues[(level - 1) % levelHues.length];
+  let baseHue;
 
   const brickWidth = (canvas.width - (brickColumnCount - 1) * brickHorizontalPadding - 2 * brickHorizontalPadding) / brickColumnCount;
   const brickHeight = 16 * scaleY;
@@ -311,6 +311,7 @@ function initBricks() {
         continue;
       }
 
+      baseHue = levelHues[(level - 1 + r) % levelHues.length];
       const brickX = c * (brickWidth + brickHorizontalPadding) + brickOffsetLeft;
       const brickY = r * (brickHeight + brickVerticalPadding) + brickOffsetTop;
 
