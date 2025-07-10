@@ -630,12 +630,13 @@ function collisionDetection() {
           bricksRemaining--;
           score = score + b.hitPoints;
           if (score > highScore) {
+            // Don't play the sound if the highScore is 0, that's too easy
             if (highScore > 0 && !highScoreSoundPlayed) {
               highScoreSound.currentTime = 0;
               highScoreSound.play();
-              highScoreSoundPlayed = true;
             }
             highScore = score;
+            highScoreSoundPlayed = true;
             localStorage.setItem("breakoutHighScore", highScore);
           }
           if (Math.trunc(score/100) > scoreDiv100) {
